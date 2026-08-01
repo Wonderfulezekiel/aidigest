@@ -95,7 +95,7 @@ export default function LandingPage() {
                     CS401_AI_Chapter_3_Search.pdf (RAG Active)
                   </span>
                 </div>
-                <Badge variant="success">Pinecone Indexed</Badge>
+                
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

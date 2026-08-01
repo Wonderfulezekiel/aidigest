@@ -3,12 +3,13 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { BookOpen, ArrowRight } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { api } from "@/lib/api";
 import { useMockData } from "@/context/MockDataContext";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/Card";
+import { AILogo } from "@/components/ui/AILogo";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -38,7 +39,6 @@ export default function RegisterPage() {
       router.push("/dashboard");
     } catch (err: any) {
       console.error(err);
-      // Fallback redirect on network lag
       updateUserProfile(fullName);
       router.push("/dashboard");
     } finally {
@@ -48,13 +48,8 @@ export default function RegisterPage() {
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4 py-12">
-      <Link href="/" className="mb-8 flex items-center gap-2.5">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground font-bold shadow-xs">
-          <BookOpen className="h-5 w-5" />
-        </div>
-        <span className="text-xl font-bold tracking-tight text-foreground">
-          PDF <span className="underline decoration-muted-foreground/30">AIDigest</span>
-        </span>
+      <Link href="/" className="mb-8 transition-opacity hover:opacity-90">
+        <AILogo size="lg" />
       </Link>
 
       <Card className="w-full max-w-md shadow-xl border-border">

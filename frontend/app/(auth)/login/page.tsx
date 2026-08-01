@@ -3,24 +3,28 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { BookOpen, ArrowRight } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { api } from "@/lib/api";
 import { useMockData } from "@/context/MockDataContext";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/Card";
+import { AILogo } from "@/components/ui/AILogo";
 
 export default function LoginPage() {
   const router = useRouter();
   const { updateUserProfile } = useMockData();
 
-  const [email, setEmail] = useState("student@university.edu");
-  const [password, setPassword] = useState("password123");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!email || !password) return;
     setIsLoading(true);
+    setError("");
 
     try {
       const res = await api.login(email, password);
@@ -28,9 +32,9 @@ export default function LoginPage() {
         updateUserProfile(res.user.full_name);
       }
       router.push("/dashboard");
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      router.push("/dashboard");
+      setError(err.message || "Invalid email or password");
     } finally {
       setIsLoading(false);
     }
@@ -38,13 +42,8 @@ export default function LoginPage() {
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4 py-12">
-      <Link href="/" className="mb-8 flex items-center gap-2.5">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground font-bold shadow-xs">
-          <BookOpen className="h-5 w-5" />
-        </div>
-        <span className="text-xl font-bold tracking-tight text-foreground">
-          PDF <span className="underline decoration-muted-foreground/30">AIDigest</span>
-        </span>
+      <Link href="/" className="mb-8 transition-opacity hover:opacity-90">
+        <AILogo size="lg" />
       </Link>
 
       <Card className="w-full max-w-md shadow-xl border-border">
@@ -57,6 +56,12 @@ export default function LoginPage() {
 
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
+            {error && (
+              <div className="rounded-md bg-destructive/10 border border-destructive/20 p-3 text-xs text-destructive">
+                {error}
+              </div>
+            )}
+
             <Input
               label="Academic Email"
               type="email"
