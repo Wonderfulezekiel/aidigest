@@ -2,10 +2,16 @@ import uuid
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import List, Optional
-from app.database import supabase, safe_execute
-from app.services.embedding_service import embedding_service
-from app.services.pinecone_service import pinecone_service
-from app.services.ai_service import ai_service
+try:
+    from app.database import supabase, safe_execute
+    from app.services.embedding_service import embedding_service
+    from app.services.pinecone_service import pinecone_service
+    from app.services.ai_service import ai_service
+except ModuleNotFoundError:
+    from backend.app.database import supabase, safe_execute
+    from backend.app.services.embedding_service import embedding_service
+    from backend.app.services.pinecone_service import pinecone_service
+    from backend.app.services.ai_service import ai_service
 
 router = APIRouter(prefix="/api/chat", tags=["chat"])
 

@@ -2,7 +2,10 @@ import uuid
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import Optional
-from app.database import supabase, safe_execute
+try:
+    from app.database import supabase, safe_execute
+except ModuleNotFoundError:
+    from backend.app.database import supabase, safe_execute
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 

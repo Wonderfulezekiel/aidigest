@@ -3,7 +3,7 @@ import math
 import random
 import asyncio
 from typing import List
-from app.config import settings
+from ..config import settings
 
 class EmbeddingService:
     @staticmethod

@@ -1,6 +1,10 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.api import auth, documents, summary, chat, user
+
+try:
+    from app.api import auth, documents, summary, chat, user
+except ModuleNotFoundError:
+    from backend.app.api import auth, documents, summary, chat, user
 
 app = FastAPI(
     title="PDF AIDigest API",

@@ -1,5 +1,5 @@
 from typing import List, Dict, Any
-from app.config import settings
+from ..config import settings
 
 class PineconeService:
     def __init__(self):
@@ -52,7 +52,6 @@ class PineconeService:
         matched = []
         for vid, vdata in self._local_vector_store.items():
             if vdata.get("metadata", {}).get("document_id") == document_id:
-                # Calculate dot product (assuming normalized vectors)
                 values = vdata["values"]
                 score = sum(a * b for a, b in zip(query_vector, values))
                 matched.append({
