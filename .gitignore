@@ -1,0 +1,36 @@
+# Dependencies
+node_modules/
+.venv/
+env/
+venv/
+ENV/
+
+# Next.js build outputs
+frontend/.next/
+frontend/out/
+frontend/build/
+
+# Python cache & artifacts
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+
+# Environment variables (Secrets)
+.env
+*.env.local
+*.env.development.local
+*.env.test.local
+*.env.production.local
+backend/.env
+frontend/.env.local
+
+# OS & IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# System logs
+*.log
