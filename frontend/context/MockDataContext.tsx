@@ -45,6 +45,75 @@ export interface ConversationItem {
   messages: ChatMessage[];
 }
 
+export interface QuizQuestion {
+  id: string;
+  quizId?: string;
+  questionIndex?: number;
+  question: string;
+  options: string[];
+  correctAnswer: string;
+  explanation: string;
+  topic: string;
+  pageCitation: number;
+}
+
+export interface QuizItem {
+  id: string;
+  documentId: string;
+  documentTitle: string;
+  title: string;
+  description: string;
+  questionCount: number;
+  questions: QuizQuestion[];
+}
+
+export interface QuestionResult {
+  questionId: string;
+  question: string;
+  chosenAnswer: string;
+  correctAnswer: string;
+  isCorrect: boolean;
+  explanation: string;
+  topic: string;
+  pageCitation: number;
+}
+
+export interface QuizAttempt {
+  id: string;
+  quizId: string;
+  quizTitle: string;
+  documentId: string;
+  documentTitle: string;
+  score: number;
+  totalQuestions: number;
+  percentage: number;
+  grade: string;
+  feedback: string;
+  timeSpentSeconds: number;
+  questionResults?: QuestionResult[];
+  createdAt?: string;
+}
+
+export interface Flashcard {
+  id: string;
+  setId?: string;
+  cardIndex?: number;
+  front: string;
+  back: string;
+  category: string;
+  difficulty: "Easy" | "Medium" | "Hard";
+  pageCitation: number;
+}
+
+export interface FlashcardSet {
+  id: string;
+  documentId: string;
+  documentTitle: string;
+  title: string;
+  cardCount: number;
+  cards: Flashcard[];
+}
+
 export interface UserProfile {
   fullName: string;
   email: string;
@@ -55,6 +124,10 @@ interface MockDataContextType {
   documents: DocumentItem[];
   summaries: Record<string, SummaryItem>;
   conversations: ConversationItem[];
+  quizzes: Record<string, QuizItem[]>; // docId -> quizzes
+  flashcardSets: Record<string, FlashcardSet>; // docId -> deck
+  allFlashcardSets: FlashcardSet[];
+  quizAttempts: QuizAttempt[];
   userProfile: UserProfile;
   uploadDocument: (file: File) => Promise<string>;
   deleteDocument: (id: string) => void;
@@ -64,6 +137,15 @@ interface MockDataContextType {
   sendMessage: (conversationId: string, messageText: string) => Promise<void>;
   deleteConversation: (conversationId: string) => void;
   clearAllConversations: () => void;
+  // Quiz Actions
+  getQuizzesForDocument: (documentId: string) => Promise<QuizItem[]>;
+  generateNewQuiz: (documentId: string) => Promise<QuizItem>;
+  submitQuizAttempt: (quizId: string, answers: Record<string, string>, timeSpentSeconds?: number) => Promise<QuizAttempt>;
+  // Flashcard Actions
+  getFlashcardsForDocument: (documentId: string) => Promise<FlashcardSet>;
+  generateNewFlashcards: (documentId: string) => Promise<FlashcardSet>;
+  fetchAllFlashcardSets: () => Promise<FlashcardSet[]>;
+  // Profile Actions
   updateUserProfile: (fullName: string) => void;
   isLoading: boolean;
 }
@@ -80,10 +162,13 @@ export function MockDataProvider({ children }: { children: React.ReactNode }) {
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const [summaries, setSummaries] = useState<Record<string, SummaryItem>>({});
   const [conversations, setConversations] = useState<ConversationItem[]>([]);
+  const [quizzes, setQuizzes] = useState<Record<string, QuizItem[]>>({});
+  const [flashcardSets, setFlashcardSets] = useState<Record<string, FlashcardSet>>({});
+  const [allFlashcardSets, setAllFlashcardSets] = useState<FlashcardSet[]>([]);
+  const [quizAttempts, setQuizAttempts] = useState<QuizAttempt[]>([]);
   const [userProfile, setUserProfile] = useState<UserProfile>(defaultProfile);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
-  // Load initial real data from FastAPI backend
   const refreshData = async () => {
     setIsLoading(true);
     try {
@@ -119,6 +204,55 @@ export function MockDataProvider({ children }: { children: React.ReactNode }) {
         })),
       }));
       setConversations(mappedConvs);
+
+      // Fetch quiz attempts history
+      try {
+        const attemptsData = await api.getQuizAttempts();
+        if (Array.isArray(attemptsData)) {
+          setQuizAttempts(attemptsData.map((a: any) => ({
+            id: a.id,
+            quizId: a.quiz_id,
+            quizTitle: a.quiz_title || "Mastery Quiz",
+            documentId: a.document_id,
+            documentTitle: a.document_title || "Document",
+            score: a.score,
+            totalQuestions: a.total_questions,
+            percentage: a.percentage,
+            grade: a.grade,
+            feedback: a.feedback,
+            timeSpentSeconds: a.time_spent_seconds || 0,
+            createdAt: a.created_at,
+          })));
+        }
+      } catch (e) {
+        console.warn("Quiz attempts fetch notice:", e);
+      }
+
+      // Fetch all flashcard sets
+      try {
+        const flashSets = await api.getAllFlashcardSets();
+        if (Array.isArray(flashSets)) {
+          const mappedSets: FlashcardSet[] = flashSets.map((s: any) => ({
+            id: s.id,
+            documentId: s.document_id,
+            documentTitle: s.document_title || "Academic Document",
+            title: s.title,
+            cardCount: s.card_count || (s.cards ? s.cards.length : 0),
+            cards: (s.cards || []).map((c: any) => ({
+              id: c.id,
+              setId: c.set_id,
+              front: c.front,
+              back: c.back,
+              category: c.category || "General",
+              difficulty: c.difficulty || "Medium",
+              pageCitation: c.page_citation || 1,
+            })),
+          }));
+          setAllFlashcardSets(mappedSets);
+        }
+      } catch (e) {
+        console.warn("Flashcard sets fetch notice:", e);
+      }
 
       // Fetch User profile
       const profileData = await api.getProfile();
@@ -163,7 +297,6 @@ export function MockDataProvider({ children }: { children: React.ReactNode }) {
   const getSummary = (documentId: string): SummaryItem | undefined => {
     if (summaries[documentId]) return summaries[documentId];
 
-    // Asynchronously fetch summary from API if not loaded
     api.getSummary(documentId).then((res) => {
       if (res) {
         const item: SummaryItem = {
@@ -187,7 +320,6 @@ export function MockDataProvider({ children }: { children: React.ReactNode }) {
   const getConversationByDocId = (documentId: string): ConversationItem | undefined => {
     let conv = conversations.find((c) => c.documentId === documentId);
     if (!conv) {
-      // Trigger API to get or create conversation session
       api.getConversationByDocId(documentId).then((cRes) => {
         if (cRes) {
           const newConv: ConversationItem = {
@@ -231,7 +363,6 @@ export function MockDataProvider({ children }: { children: React.ReactNode }) {
       setConversations((prev) =>
         prev.map((c) => {
           if (c.id === conversationId) {
-            // Append user message and AI response
             const hasUserMsg = c.messages.some((m) => m.message === messageText && m.role === "user");
             const userMsgObj: ChatMessage = {
               id: `user-${Date.now()}`,
@@ -269,6 +400,140 @@ export function MockDataProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  // --- Quiz Context Methods ---
+  const mapQuiz = (q: any): QuizItem => ({
+    id: q.id,
+    documentId: q.document_id,
+    documentTitle: q.document_title || "Academic Document",
+    title: q.title || "Mastery Quiz",
+    description: q.description || "Interactive learning quiz.",
+    questionCount: q.question_count || (q.questions ? q.questions.length : 0),
+    questions: (q.questions || []).map((item: any) => ({
+      id: item.id,
+      quizId: item.quiz_id,
+      questionIndex: item.question_index,
+      question: item.question,
+      options: item.options || [],
+      correctAnswer: item.correct_answer,
+      explanation: item.explanation,
+      topic: item.topic || "General",
+      pageCitation: item.page_citation || 1,
+    })),
+  });
+
+  const getQuizzesForDocument = async (documentId: string): Promise<QuizItem[]> => {
+    if (quizzes[documentId] && quizzes[documentId].length > 0) {
+      return quizzes[documentId];
+    }
+    try {
+      const res = await api.getQuizzesByDoc(documentId);
+      const list = Array.isArray(res) ? res.map(mapQuiz) : [mapQuiz(res)];
+      setQuizzes((prev) => ({ ...prev, [documentId]: list }));
+      return list;
+    } catch (e) {
+      console.error("Fetch quizzes error:", e);
+      return [];
+    }
+  };
+
+  const generateNewQuiz = async (documentId: string): Promise<QuizItem> => {
+    const res = await api.generateQuiz(documentId);
+    const newQuiz = mapQuiz(res);
+    setQuizzes((prev) => ({
+      ...prev,
+      [documentId]: [newQuiz, ...(prev[documentId] || [])],
+    }));
+    return newQuiz;
+  };
+
+  const submitQuizAttempt = async (
+    quizId: string,
+    answers: Record<string, string>,
+    timeSpentSeconds: number = 0
+  ): Promise<QuizAttempt> => {
+    const res = await api.submitQuiz(quizId, answers, timeSpentSeconds);
+    const attempt: QuizAttempt = {
+      id: res.id,
+      quizId: res.quiz_id,
+      quizTitle: res.quiz_title,
+      documentId: res.document_id,
+      documentTitle: res.document_title,
+      score: res.score,
+      totalQuestions: res.total_questions,
+      percentage: res.percentage,
+      grade: res.grade,
+      feedback: res.feedback,
+      timeSpentSeconds: res.time_spent_seconds,
+      questionResults: (res.question_results || []).map((r: any) => ({
+        questionId: r.question_id,
+        question: r.question,
+        chosenAnswer: r.chosen_answer,
+        correctAnswer: r.correct_answer,
+        isCorrect: r.is_correct,
+        explanation: r.explanation,
+        topic: r.topic,
+        pageCitation: r.page_citation,
+      })),
+      createdAt: new Date().toISOString(),
+    };
+    setQuizAttempts((prev) => [attempt, ...prev]);
+    return attempt;
+  };
+
+  // --- Flashcard Context Methods ---
+  const mapFlashcardSet = (s: any): FlashcardSet => ({
+    id: s.id,
+    documentId: s.document_id,
+    documentTitle: s.document_title || "Academic Document",
+    title: s.title || "Study Deck",
+    cardCount: s.card_count || (s.cards ? s.cards.length : 0),
+    cards: (s.cards || []).map((c: any) => ({
+      id: c.id,
+      setId: c.set_id,
+      cardIndex: c.card_index,
+      front: c.front,
+      back: c.back,
+      category: c.category || "Concept",
+      difficulty: c.difficulty || "Medium",
+      pageCitation: c.page_citation || 1,
+    })),
+  });
+
+  const getFlashcardsForDocument = async (documentId: string): Promise<FlashcardSet> => {
+    if (flashcardSets[documentId]) {
+      return flashcardSets[documentId];
+    }
+    try {
+      const res = await api.getFlashcardsByDoc(documentId);
+      const set = mapFlashcardSet(res);
+      setFlashcardSets((prev) => ({ ...prev, [documentId]: set }));
+      return set;
+    } catch (e) {
+      console.error("Fetch flashcards error:", e);
+      throw e;
+    }
+  };
+
+  const generateNewFlashcards = async (documentId: string): Promise<FlashcardSet> => {
+    const res = await api.generateFlashcards(documentId);
+    const newSet = mapFlashcardSet(res);
+    setFlashcardSets((prev) => ({ ...prev, [documentId]: newSet }));
+    setAllFlashcardSets((prev) => [newSet, ...prev.filter((item) => item.id !== newSet.id)]);
+    return newSet;
+  };
+
+  const fetchAllFlashcardSets = async (): Promise<FlashcardSet[]> => {
+    try {
+      const res = await api.getAllFlashcardSets();
+      const list = (res || []).map(mapFlashcardSet);
+      setAllFlashcardSets(list);
+      return list;
+    } catch (e) {
+      console.error("Fetch all flashcard sets error:", e);
+      return [];
+    }
+  };
+
   const updateUserProfile = async (fullName: string) => {
     try {
       const updated = await api.updateProfile(fullName);
@@ -284,6 +549,10 @@ export function MockDataProvider({ children }: { children: React.ReactNode }) {
         documents,
         summaries,
         conversations,
+        quizzes,
+        flashcardSets,
+        allFlashcardSets,
+        quizAttempts,
         userProfile,
         uploadDocument,
         deleteDocument,
@@ -293,6 +562,12 @@ export function MockDataProvider({ children }: { children: React.ReactNode }) {
         sendMessage,
         deleteConversation,
         clearAllConversations,
+        getQuizzesForDocument,
+        generateNewQuiz,
+        submitQuizAttempt,
+        getFlashcardsForDocument,
+        generateNewFlashcards,
+        fetchAllFlashcardSets,
         updateUserProfile,
         isLoading,
       }}

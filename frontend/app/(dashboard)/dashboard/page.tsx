@@ -11,7 +11,10 @@ import {
   Plus,
   BookOpen,
   Layers,
-  ArrowUpRight,
+  Award,
+  Sparkles,
+  ArrowRight,
+  CheckCircle2,
 } from "lucide-react";
 import { useMockData } from "@/context/MockDataContext";
 import { formatBytes, formatDate } from "@/lib/utils";
@@ -20,14 +23,15 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import { Badge } from "@/components/ui/Badge";
 
 export default function DashboardPage() {
-  const { documents, conversations, userProfile } = useMockData();
+  const { documents, conversations, quizAttempts, userProfile } = useMockData();
 
   const totalPages = documents.reduce((acc, doc) => acc + doc.pageCount, 0);
   const totalVectors = documents.reduce((acc, doc) => acc + doc.vectorCount, 0);
   const lastConversation = conversations[0];
+  const lastQuizAttempt = quizAttempts[0];
 
   return (
-    <div className="space-y-8 animate-in fade-in-50">
+    <div className="space-y-8 animate-in fade-in-50 pb-12">
       {/* Welcome Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-6">
         <div>
@@ -35,15 +39,23 @@ export default function DashboardPage() {
             Welcome back, {userProfile.fullName}
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Manage your academic PDFs, AI summaries, and study conversations.
+            Manage your academic PDFs, AI summaries, quizzes, and 3D study flashcards.
           </p>
         </div>
-        <Link href="/upload">
-          <Button className="gap-2 shadow-xs">
-            <Plus className="h-4 w-4" />
-            Upload New PDF
-          </Button>
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link href="/quiz">
+            <Button variant="outline" className="gap-2 shadow-xs text-xs">
+              <Award className="h-4 w-4 text-primary" />
+              AI Quizzes
+            </Button>
+          </Link>
+          <Link href="/upload">
+            <Button className="gap-2 shadow-xs text-xs">
+              <Plus className="h-4 w-4" />
+              Upload PDF
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* Metrics Grid */}
@@ -52,7 +64,7 @@ export default function DashboardPage() {
           <div>
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Total Documents</p>
             <p className="text-2xl font-bold text-foreground mt-1">{documents.length}</p>
-            <p className="text-xs text-muted-foreground mt-0.5">{totalPages} pages total</p>
+            <p className="text-xs text-muted-foreground mt-0.5">{totalPages} pages indexed</p>
           </div>
           <div className="h-11 w-11 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
             <FileText className="h-5 w-5" />
@@ -61,110 +73,101 @@ export default function DashboardPage() {
 
         <Card className="p-5 flex items-center justify-between">
           <div>
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">AI Conversations</p>
-            <p className="text-2xl font-bold text-foreground mt-1">{conversations.length}</p>
-            <p className="text-xs text-muted-foreground mt-0.5">Active study threads</p>
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">AI Quizzes Taken</p>
+            <p className="text-2xl font-bold text-foreground mt-1">{quizAttempts.length}</p>
+            <p className="text-xs text-emerald-500 font-medium mt-0.5">Active Recall</p>
           </div>
           <div className="h-11 w-11 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
-            <MessageSquare className="h-5 w-5" />
+            <Award className="h-5 w-5" />
           </div>
         </Card>
 
         <Card className="p-5 flex items-center justify-between">
           <div>
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Indexed Passages</p>
-            <p className="text-2xl font-bold text-foreground mt-1">{totalVectors}</p>
-            <p className="text-xs text-emerald-500 font-medium mt-0.5">Search ready</p>
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Flashcard Decks</p>
+            <p className="text-2xl font-bold text-foreground mt-1">{documents.length}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">3D Study Ready</p>
           </div>
-          <div className="h-11 w-11 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+          <div className="h-11 w-11 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
             <Layers className="h-5 w-5" />
           </div>
         </Card>
 
         <Card className="p-5 flex items-center justify-between">
           <div>
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Summaries Generated</p>
-            <p className="text-2xl font-bold text-foreground mt-1">{documents.length * 2}</p>
-            <p className="text-xs text-muted-foreground mt-0.5">Executive & Detailed</p>
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">AI Discussions</p>
+            <p className="text-2xl font-bold text-foreground mt-1">{conversations.length}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Active RAG threads</p>
           </div>
           <div className="h-11 w-11 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
-            <BookOpen className="h-5 w-5" />
+            <MessageSquare className="h-5 w-5" />
           </div>
         </Card>
       </div>
 
-      {/* Quick Upload Widget & Resume Last Chat Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Drag and Drop Quick Upload */}
-        <Card className="lg:col-span-2 border-dashed border-2 hover:border-primary/50 transition-colors">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center gap-2">
-              <Upload className="h-4 w-4" /> Quick Upload Zone
-            </CardTitle>
-            <CardDescription className="text-xs">
-              Upload any lecture note, textbook chapter, or research PDF for instant AI analysis
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Link href="/upload" className="block text-center py-8 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors cursor-pointer group">
-              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary group-hover:scale-105 transition-transform">
-                <Upload className="h-6 w-6" />
+      {/* Feature Study Cards Launchpad */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Adaptive Quiz Launch Card */}
+        <Card className="border-border hover:border-primary/50 transition-all p-6 flex flex-col justify-between bg-gradient-to-br from-primary/5 via-card to-card">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="h-10 w-10 rounded-xl bg-primary text-primary-foreground flex items-center justify-center shadow-xs">
+                <Award className="h-5 w-5" />
               </div>
-              <p className="mt-3 text-sm font-semibold text-foreground">Click to browse or drop PDF here</p>
-              <p className="text-xs text-muted-foreground mt-1">PDF files up to 50MB</p>
+              <Badge variant="default" className="text-xs">Adaptive Learning</Badge>
+            </div>
+            <h3 className="text-lg font-bold text-foreground">Interactive AI Quizzes</h3>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Test your understanding on lecture handouts with instant answer checks, intelligent corrections, and comprehensive topic reviews.
+            </p>
+          </div>
+
+          <div className="pt-5 border-t border-border/80 mt-4 flex items-center justify-between">
+            <span className="text-xs text-muted-foreground">
+              {lastQuizAttempt ? `Last Score: ${lastQuizAttempt.percentage}%` : "Ready to practice"}
+            </span>
+            <Link href="/quiz">
+              <Button size="sm" className="gap-1.5 text-xs">
+                <span>Open Quizzes</span>
+                <ArrowRight className="h-3.5 w-3.5" />
+              </Button>
             </Link>
-          </CardContent>
+          </div>
         </Card>
 
-        {/* Continue Last Chat Card */}
-        <Card className="flex flex-col justify-between">
-          <CardHeader className="pb-2">
+        {/* 3D Flashcards Launch Card */}
+        <Card className="border-border hover:border-primary/50 transition-all p-6 flex flex-col justify-between bg-gradient-to-br from-emerald-500/5 via-card to-card">
+          <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <Badge variant="outline">Active Study Session</Badge>
-              <Clock className="h-3.5 w-3.5 text-muted-foreground" />
-            </div>
-            <CardTitle className="text-base mt-2 truncate">
-              {lastConversation ? lastConversation.title : "No active chat"}
-            </CardTitle>
-            <CardDescription className="text-xs truncate">
-              {lastConversation ? lastConversation.documentTitle : "Upload a PDF to begin"}
-            </CardDescription>
-          </CardHeader>
-
-          <CardContent className="py-2">
-            {lastConversation ? (
-              <div className="p-3 rounded-md bg-muted/40 text-xs text-muted-foreground space-y-1">
-                <p className="font-medium text-foreground truncate">
-                  Latest prompt: &quot;{lastConversation.messages[lastConversation.messages.length - 1]?.message}&quot;
-                </p>
-                <p className="text-[11px]">{lastConversation.messages.length} messages exchanged</p>
+              <div className="h-10 w-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center shadow-xs">
+                <Layers className="h-5 w-5" />
               </div>
-            ) : (
-              <p className="text-xs text-muted-foreground">Start chatting with your documents to see your sessions here.</p>
-            )}
-          </CardContent>
+              <Badge variant="success" className="text-xs">Active Recall</Badge>
+            </div>
+            <h3 className="text-lg font-bold text-foreground">3D Flashcard Study Decks</h3>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Review key concepts, definitions, and formulas with interactive 3D flip cards, mastery sorting, and spaced repetition.
+            </p>
+          </div>
 
-          <CardFooter className="pt-2">
-            {lastConversation ? (
-              <Link href={`/documents/${lastConversation.documentId}/chat`} className="w-full">
-                <Button variant="outline" size="sm" className="w-full justify-between">
-                  <span>Resume Discussion</span>
-                  <ArrowUpRight className="h-4 w-4" />
-                </Button>
-              </Link>
-            ) : (
-              <Link href="/upload" className="w-full">
-                <Button size="sm" className="w-full">Upload First PDF</Button>
-              </Link>
-            )}
-          </CardFooter>
+          <div className="pt-5 border-t border-border/80 mt-4 flex items-center justify-between">
+            <span className="text-xs text-muted-foreground">
+              {documents.length} Study Decks Available
+            </span>
+            <Link href="/flashcards">
+              <Button size="sm" variant="outline" className="gap-1.5 text-xs border-emerald-500/40 text-foreground hover:bg-emerald-500/10">
+                <span>Explore Flashcards</span>
+                <ArrowRight className="h-3.5 w-3.5" />
+              </Button>
+            </Link>
+          </div>
         </Card>
       </div>
 
       {/* Recent Documents Grid */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold tracking-tight text-foreground">Recent Documents</h2>
+          <h2 className="text-lg font-bold tracking-tight text-foreground">Your Document Library</h2>
           <Link href="/documents" className="text-xs font-medium text-muted-foreground hover:text-foreground flex items-center gap-1">
             View All ({documents.length})
             <ChevronRight className="h-3.5 w-3.5" />
@@ -203,14 +206,16 @@ export default function DashboardPage() {
               </CardContent>
 
               <CardFooter className="pt-3 border-t border-border grid grid-cols-2 gap-2">
-                <Link href={`/documents/${doc.id}/summary`}>
-                  <Button variant="outline" size="sm" className="w-full text-xs">
-                    View Summary
+                <Link href={`/documents/${doc.id}/quiz`}>
+                  <Button variant="outline" size="sm" className="w-full text-xs gap-1">
+                    <Award className="h-3.5 w-3.5 text-primary" />
+                    Quiz
                   </Button>
                 </Link>
-                <Link href={`/documents/${doc.id}/chat`}>
-                  <Button size="sm" className="w-full text-xs">
-                    Chat with AI
+                <Link href={`/documents/${doc.id}/flashcards`}>
+                  <Button size="sm" className="w-full text-xs gap-1">
+                    <Layers className="h-3.5 w-3.5" />
+                    Flashcards
                   </Button>
                 </Link>
               </CardFooter>

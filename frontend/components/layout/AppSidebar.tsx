@@ -8,6 +8,8 @@ import {
   Upload,
   FileText,
   MessageSquare,
+  Award,
+  Layers,
   User,
   Settings,
   Plus,
@@ -30,6 +32,8 @@ export function AppSidebar({ className, onNavigate }: AppSidebarProps) {
     { name: "Upload PDF", href: "/upload", icon: Upload },
     { name: "My Documents", href: "/documents", icon: FileText },
     { name: "Chat History", href: "/chat/history", icon: MessageSquare },
+    { name: "AI Quizzes", href: "/quiz", icon: Award },
+    { name: "Flashcards", href: "/flashcards", icon: Layers },
     { name: "Profile", href: "/profile", icon: User },
     { name: "Settings", href: "/settings", icon: Settings },
   ];

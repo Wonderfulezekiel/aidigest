@@ -73,6 +73,26 @@ export const api = {
   deleteConversation: (convId: string) => fetchApi(`/chat/${convId}`, { method: "DELETE" }),
   clearAllConversations: () => fetchApi("/chat/clear/all", { method: "DELETE" }),
 
+  // Quiz API
+  generateQuiz: (docId: string) =>
+    fetchApi(`/quiz/generate/${docId}`, { method: "POST" }),
+  getQuizzesByDoc: (docId: string) => fetchApi(`/quiz/document/${docId}`),
+  getQuiz: (quizId: string) => fetchApi(`/quiz/${quizId}`),
+  submitQuiz: (quizId: string, answers: Record<string, string>, timeSpentSeconds: number = 0) =>
+    fetchApi(`/quiz/${quizId}/submit`, {
+      method: "POST",
+      body: JSON.stringify({ answers, time_spent_seconds: timeSpentSeconds }),
+    }),
+  getQuizAttempts: () => fetchApi("/quiz/attempts/user"),
+  deleteQuiz: (quizId: string) => fetchApi(`/quiz/${quizId}`, { method: "DELETE" }),
+
+  // Flashcards API
+  generateFlashcards: (docId: string) =>
+    fetchApi(`/flashcards/generate/${docId}`, { method: "POST" }),
+  getFlashcardsByDoc: (docId: string) => fetchApi(`/flashcards/document/${docId}`),
+  getAllFlashcardSets: () => fetchApi("/flashcards/all"),
+  deleteFlashcards: (setId: string) => fetchApi(`/flashcards/${setId}`, { method: "DELETE" }),
+
   // User Profile & Settings API
   getProfile: () => fetchApi("/user/profile"),
   updateProfile: (fullName: string, email?: string) =>

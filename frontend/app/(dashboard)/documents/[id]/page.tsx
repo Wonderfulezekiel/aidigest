@@ -8,11 +8,10 @@ import {
   BookOpen,
   MessageSquare,
   ArrowLeft,
-  Trash2,
-  Download,
+  Award,
   Layers,
-  CheckCircle2,
-  Clock,
+  Sparkles,
+  Download,
   HardDrive,
 } from "lucide-react";
 import { useMockData } from "@/context/MockDataContext";
@@ -41,13 +40,8 @@ export default function DocumentDetailsPage() {
     );
   }
 
-  const handleDelete = () => {
-    deleteDocument(doc.id);
-    router.push("/documents");
-  };
-
   return (
-    <div className="space-y-6 max-w-5xl mx-auto animate-in fade-in-50">
+    <div className="space-y-6 max-w-5xl mx-auto animate-in fade-in-50 pb-12">
       {/* Back Link */}
       <Link href="/documents" className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
         <ArrowLeft className="h-3.5 w-3.5" />
@@ -69,20 +63,96 @@ export default function DocumentDetailsPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        {/* Action Buttons Grid */}
+        <div className="flex items-center gap-2 flex-wrap">
           <Link href={`/documents/${doc.id}/summary`}>
-            <Button variant="outline" className="gap-2">
+            <Button variant="outline" size="sm" className="gap-1.5 text-xs">
               <BookOpen className="h-4 w-4" />
-              View Summary
+              Summary
             </Button>
           </Link>
           <Link href={`/documents/${doc.id}/chat`}>
-            <Button className="gap-2">
+            <Button variant="outline" size="sm" className="gap-1.5 text-xs">
               <MessageSquare className="h-4 w-4" />
-              Chat with AI
+              Chat AI
+            </Button>
+          </Link>
+          <Link href={`/documents/${doc.id}/quiz`}>
+            <Button variant="outline" size="sm" className="gap-1.5 text-xs border-primary/40 text-primary">
+              <Award className="h-4 w-4" />
+              Take Quiz
+            </Button>
+          </Link>
+          <Link href={`/documents/${doc.id}/flashcards`}>
+            <Button size="sm" className="gap-1.5 text-xs">
+              <Layers className="h-4 w-4" />
+              Flashcards
             </Button>
           </Link>
         </div>
+      </div>
+
+      {/* Quick Action Study Cards Banner */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Link href={`/documents/${doc.id}/summary`} className="block group">
+          <Card className="p-4 border-border hover:border-primary/50 transition-all h-full flex flex-col justify-between">
+            <div className="space-y-2">
+              <div className="h-9 w-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
+                <BookOpen className="h-4 w-4" />
+              </div>
+              <h3 className="font-bold text-sm text-foreground">AI Summaries</h3>
+              <p className="text-xs text-muted-foreground">Executive overviews, tables, and core concepts.</p>
+            </div>
+            <span className="text-xs text-primary font-semibold mt-3 inline-block group-hover:underline">
+              Read Summary &rarr;
+            </span>
+          </Card>
+        </Link>
+
+        <Link href={`/documents/${doc.id}/chat`} className="block group">
+          <Card className="p-4 border-border hover:border-primary/50 transition-all h-full flex flex-col justify-between">
+            <div className="space-y-2">
+              <div className="h-9 w-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
+                <MessageSquare className="h-4 w-4" />
+              </div>
+              <h3 className="font-bold text-sm text-foreground">RAG Chat</h3>
+              <p className="text-xs text-muted-foreground">Ask questions with exact page citations.</p>
+            </div>
+            <span className="text-xs text-primary font-semibold mt-3 inline-block group-hover:underline">
+              Start Conversation &rarr;
+            </span>
+          </Card>
+        </Link>
+
+        <Link href={`/documents/${doc.id}/quiz`} className="block group">
+          <Card className="p-4 border-border hover:border-primary/50 transition-all h-full flex flex-col justify-between bg-primary/5">
+            <div className="space-y-2">
+              <div className="h-9 w-9 rounded-lg bg-primary text-primary-foreground flex items-center justify-center shadow-xs">
+                <Award className="h-4 w-4" />
+              </div>
+              <h3 className="font-bold text-sm text-foreground">Interactive Quiz</h3>
+              <p className="text-xs text-muted-foreground">Adaptive learning quiz with instant AI feedback.</p>
+            </div>
+            <span className="text-xs text-primary font-semibold mt-3 inline-block group-hover:underline">
+              Take AI Quiz &rarr;
+            </span>
+          </Card>
+        </Link>
+
+        <Link href={`/documents/${doc.id}/flashcards`} className="block group">
+          <Card className="p-4 border-border hover:border-primary/50 transition-all h-full flex flex-col justify-between bg-emerald-500/5">
+            <div className="space-y-2">
+              <div className="h-9 w-9 rounded-lg bg-emerald-600 text-white flex items-center justify-center shadow-xs">
+                <Layers className="h-4 w-4" />
+              </div>
+              <h3 className="font-bold text-sm text-foreground">3D Flashcards</h3>
+              <p className="text-xs text-muted-foreground">Active recall study deck with flip cards.</p>
+            </div>
+            <span className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold mt-3 inline-block group-hover:underline">
+              Study Deck &rarr;
+            </span>
+          </Card>
+        </Link>
       </div>
 
       {/* Technical Metadata Grid */}
@@ -117,39 +187,36 @@ export default function DocumentDetailsPage() {
               <Layers className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-xs text-muted-foreground uppercase font-medium">Pinecone Chunks</p>
-              <p className="text-base font-bold text-foreground">{doc.vectorCount} vectors</p>
+              <p className="text-xs text-muted-foreground uppercase font-medium">Pinecone Vectors</p>
+              <p className="text-base font-bold text-foreground">{doc.vectorCount} chunks</p>
             </div>
           </div>
         </Card>
       </div>
 
-      {/* PDF View Mockup */}
-      <Card className="shadow-md">
+      {/* Document Information Card */}
+      <Card className="shadow-xs">
         <CardHeader className="flex flex-row items-center justify-between border-b border-border pb-4">
           <div>
-            <CardTitle className="text-base">Document Preview</CardTitle>
-            <CardDescription className="text-xs">Processed PyMuPDF text rendering</CardDescription>
+            <CardTitle className="text-base">Document Content Preview</CardTitle>
+            <CardDescription className="text-xs">Extracted text passages and indexed study context</CardDescription>
           </div>
-          <Button variant="outline" size="sm" className="gap-2" onClick={() => alert("Downloading original PDF file from Supabase Storage...")}>
+          <Button variant="outline" size="sm" className="gap-2" onClick={() => alert("Downloading document...")}>
             <Download className="h-4 w-4" />
             Download PDF
           </Button>
         </CardHeader>
         <CardContent className="pt-6">
-          <div className="h-96 rounded-lg border border-border bg-muted/20 p-6 font-mono text-xs text-muted-foreground overflow-y-auto space-y-4">
-            <p className="text-foreground font-bold text-sm text-center underline decoration-muted-foreground/30">
+          <div className="h-64 rounded-lg border border-border bg-muted/20 p-6 font-mono text-xs text-muted-foreground overflow-y-auto space-y-3">
+            <p className="text-foreground font-bold text-sm underline decoration-muted-foreground/30">
               {doc.title.toUpperCase()}
             </p>
             <p className="leading-relaxed">
-              [Simulated PDF Viewer Page 1] - Chapter 1: Introduction to state-space representations in modern computational frameworks. The target domain comprises discrete states, action sets, and deterministic transition models...
+              [Indexed Passage #1]: Course content introduces fundamental principles, requirements engineering, data gathering techniques, qualitative interviews, and quantitative system evaluations.
             </p>
-            <div className="p-4 rounded border border-border bg-card text-foreground">
-              <span className="font-semibold text-emerald-500">Indexed Chunk #1:</span> &quot;A state space graph comprises nodes representing configurations and directed arcs representing transitions.&quot;
+            <div className="p-3 rounded border border-border bg-card text-foreground">
+              <span className="font-semibold text-emerald-500">Key Focus:</span> &quot;Establishing clear requirements is the foundation of successful engineering projects.&quot;
             </div>
-            <p className="leading-relaxed">
-              [Simulated PDF Viewer Page 2] - Evaluative functions combine step costs g(n) with heuristic estimations h(n). Detailed derivations demonstrate admissibility bounds...
-            </p>
           </div>
         </CardContent>
       </Card>
