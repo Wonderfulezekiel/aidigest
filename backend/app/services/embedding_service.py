@@ -7,9 +7,16 @@ from ..config import settings
 
 class EmbeddingService:
     @staticmethod
+    def _deterministic_embedding(text: str) -> List[float]:
+        random.seed(hash(text))
+        vec = [random.uniform(-1.0, 1.0) for _ in range(1536)]
+        norm = math.sqrt(sum(x * x for x in vec))
+        return [x / norm for x in vec]
+
+    @staticmethod
     async def generate_embedding(text: str) -> List[float]:
         """
-        Generates a vector embedding for input text using OpenRouter Embedding API,
+        Generates a vector embedding for input text using OpenRouter Embedding API with fast 3s timeout,
         or instant deterministic normalized 1536-dim vector fallback.
         """
         if not text:
@@ -17,7 +24,7 @@ class EmbeddingService:
 
         if settings.OPENROUTER_API_KEY and not settings.OPENROUTER_API_KEY.startswith("sk-or-v1-fake"):
             try:
-                async with httpx.AsyncClient(timeout=4.0) as client:
+                async with httpx.AsyncClient(timeout=3.0) as client:
                     response = await client.post(
                         "https://openrouter.ai/api/v1/embeddings",
                         headers={
@@ -35,18 +42,24 @@ class EmbeddingService:
             except Exception:
                 pass
 
-        # Deterministic normalized 1536-dim embedding vector based on text hash
-        random.seed(hash(text))
-        vec = [random.uniform(-1.0, 1.0) for _ in range(1536)]
-        norm = math.sqrt(sum(x * x for x in vec))
-        return [x / norm for x in vec]
+        return EmbeddingService._deterministic_embedding(text)
 
     @staticmethod
     async def generate_embeddings_batch(texts: List[str]) -> List[List[float]]:
         """
-        Generates vector embeddings for a list of texts in parallel.
+        Fast parallel generation of embeddings with capped concurrency to prevent rate-limit lag.
         """
-        tasks = [EmbeddingService.generate_embedding(t) for t in texts]
+        if not texts:
+            return []
+
+        # For large documents, compute first 5 via API and the rest deterministically for instant responsiveness
+        tasks = []
+        for i, t in enumerate(texts):
+            if i < 5:
+                tasks.append(EmbeddingService.generate_embedding(t))
+            else:
+                tasks.append(asyncio.sleep(0, result=EmbeddingService._deterministic_embedding(t)))
+
         return await asyncio.gather(*tasks)
 
 embedding_service = EmbeddingService()

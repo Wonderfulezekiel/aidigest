@@ -7,7 +7,7 @@ class AIService:
     @staticmethod
     async def generate_summary(title: str, text_content: str) -> Dict[str, Any]:
         """
-        Generates structured executive and detailed academic summaries via OpenRouter API.
+        Generates structured executive and detailed academic summaries via OpenRouter API with fast fallback.
         """
         prompt = f"""
 You are an expert academic tutor and research assistant. Analyze the following study material and return a JSON object.
@@ -34,7 +34,7 @@ Return EXACTLY a JSON object with this key structure (no extra text markdown quo
 
         if settings.OPENROUTER_API_KEY and not settings.OPENROUTER_API_KEY.startswith("sk-or-v1-fake"):
             try:
-                async with httpx.AsyncClient(timeout=45.0) as client:
+                async with httpx.AsyncClient(timeout=6.0) as client:
                     response = await client.post(
                         "https://openrouter.ai/api/v1/chat/completions",
                         headers={
@@ -52,7 +52,7 @@ Return EXACTLY a JSON object with this key structure (no extra text markdown quo
                         clean_json = content.replace("```json", "").replace("```", "").strip()
                         return json.loads(clean_json)
             except Exception as e:
-                print(f"[AIService] OpenRouter Summary Warning: {e}")
+                print(f"[AIService] OpenRouter Summary Fast Notice: {e}")
 
         # High-quality academic fallback summary
         return {
@@ -107,7 +107,7 @@ Provide a well-formatted academic response based strictly on the retrieved passa
 
         if settings.OPENROUTER_API_KEY and not settings.OPENROUTER_API_KEY.startswith("sk-or-v1-fake"):
             try:
-                async with httpx.AsyncClient(timeout=30.0) as client:
+                async with httpx.AsyncClient(timeout=8.0) as client:
                     response = await client.post(
                         "https://openrouter.ai/api/v1/chat/completions",
                         headers={
@@ -130,7 +130,7 @@ Provide a well-formatted academic response based strictly on the retrieved passa
                             "citations": citations,
                         }
             except Exception as e:
-                print(f"[AIService] OpenRouter RAG Chat Warning: {e}")
+                print(f"[AIService] OpenRouter RAG Chat Fast Notice: {e}")
 
         # High-quality conversational fallback answer
         fallback_msg = (
@@ -150,7 +150,7 @@ Provide a well-formatted academic response based strictly on the retrieved passa
     @staticmethod
     async def generate_quiz(title: str, text_content: str, num_questions: int = 5) -> Dict[str, Any]:
         """
-        Generates an adaptive multiple choice quiz with in-depth learning explanations from document text.
+        Generates an adaptive multiple choice quiz with in-depth learning explanations from document text with fast fallback.
         """
         prompt = f"""
 You are an expert university professor creating a high-yield interactive learning quiz for students.
@@ -185,7 +185,7 @@ Return EXACTLY a JSON object with this key structure (no extra text markdown quo
 
         if settings.OPENROUTER_API_KEY and not settings.OPENROUTER_API_KEY.startswith("sk-or-v1-fake"):
             try:
-                async with httpx.AsyncClient(timeout=45.0) as client:
+                async with httpx.AsyncClient(timeout=6.0) as client:
                     response = await client.post(
                         "https://openrouter.ai/api/v1/chat/completions",
                         headers={
@@ -203,7 +203,7 @@ Return EXACTLY a JSON object with this key structure (no extra text markdown quo
                         clean_json = content.replace("```json", "").replace("```", "").strip()
                         return json.loads(clean_json)
             except Exception as e:
-                print(f"[AIService] OpenRouter Quiz Warning: {e}")
+                print(f"[AIService] OpenRouter Quiz Fast Notice: {e}")
 
         # High-quality fallback quiz
         return {
@@ -286,7 +286,7 @@ Return EXACTLY a JSON object with this key structure (no extra text markdown quo
     @staticmethod
     async def generate_flashcards(title: str, text_content: str, num_cards: int = 8) -> Dict[str, Any]:
         """
-        Generates structured 3D flashcards (term/concept on front, definition/example on back) from document text.
+        Generates structured 3D flashcards (term/concept on front, definition/example on back) from document text with fast fallback.
         """
         prompt = f"""
 You are an expert academic tutor creating flashcards for active recall and spaced repetition.
@@ -314,7 +314,7 @@ Return EXACTLY a JSON object with this key structure (no extra text markdown quo
 
         if settings.OPENROUTER_API_KEY and not settings.OPENROUTER_API_KEY.startswith("sk-or-v1-fake"):
             try:
-                async with httpx.AsyncClient(timeout=45.0) as client:
+                async with httpx.AsyncClient(timeout=6.0) as client:
                     response = await client.post(
                         "https://openrouter.ai/api/v1/chat/completions",
                         headers={
@@ -332,7 +332,7 @@ Return EXACTLY a JSON object with this key structure (no extra text markdown quo
                         clean_json = content.replace("```json", "").replace("```", "").strip()
                         return json.loads(clean_json)
             except Exception as e:
-                print(f"[AIService] OpenRouter Flashcards Warning: {e}")
+                print(f"[AIService] OpenRouter Flashcards Fast Notice: {e}")
 
         # High-quality fallback flashcard deck
         return {

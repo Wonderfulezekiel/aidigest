@@ -17,9 +17,8 @@ import {
   Search,
   LayoutGrid,
   CreditCard,
-  Volume2,
   Check,
-  X,
+  HelpCircle,
 } from "lucide-react";
 import { useMockData, FlashcardSet, Flashcard } from "@/context/MockDataContext";
 import { Button } from "@/components/ui/Button";
@@ -50,19 +49,32 @@ export default function DocumentFlashcardsPage() {
   useEffect(() => {
     let isMounted = true;
     setIsLoading(true);
+
+    const safetyTimer = setTimeout(() => {
+      if (isMounted) setIsLoading(false);
+    }, 4000);
+
     getFlashcardsForDocument(docId)
       .then((data) => {
         if (isMounted) {
-          setDeck(data);
-          setCards(data.cards || []);
+          clearTimeout(safetyTimer);
+          if (data && data.cards && data.cards.length > 0) {
+            setDeck(data);
+            setCards(data.cards || []);
+          }
           setIsLoading(false);
         }
       })
-      .catch(() => {
-        if (isMounted) setIsLoading(false);
+      .catch((err) => {
+        if (isMounted) {
+          clearTimeout(safetyTimer);
+          setIsLoading(false);
+        }
       });
+
     return () => {
       isMounted = false;
+      clearTimeout(safetyTimer);
     };
   }, [docId]);
 
@@ -133,16 +145,6 @@ export default function DocumentFlashcardsPage() {
     setNeedsReviewIds(new Set());
   };
 
-  const handlePracticeWeakCards = () => {
-    if (!deck) return;
-    const weak = deck.cards.filter((c) => needsReviewIds.has(c.id));
-    if (weak.length > 0) {
-      setCards(weak);
-      setCurrentIndex(0);
-      setIsFlipped(false);
-    }
-  };
-
   const handleGenerateNewDeck = async () => {
     setIsGenerating(true);
     try {
@@ -161,7 +163,7 @@ export default function DocumentFlashcardsPage() {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
         <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-        <p className="text-sm text-muted-foreground font-medium">Extracting AI Flashcards from document...</p>
+        <p className="text-sm text-muted-foreground font-medium">Loading AI Flashcards from document...</p>
       </div>
     );
   }
@@ -173,7 +175,7 @@ export default function DocumentFlashcardsPage() {
           <Layers className="h-8 w-8" />
         </div>
         <div className="space-y-2">
-          <h2 className="text-2xl font-bold tracking-tight">No Flashcard Deck Found</h2>
+          <h2 className="text-2xl font-bold tracking-tight">Generate Study Flashcards</h2>
           <p className="text-sm text-muted-foreground">
             Generate an interactive 3D study deck for <strong>{doc?.title || "this document"}</strong>.
           </p>

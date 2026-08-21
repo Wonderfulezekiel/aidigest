@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import {
@@ -47,22 +47,35 @@ export default function DocumentQuizPage() {
   const [mode, setMode] = useState<"learning" | "exam">("learning");
   const [timerSeconds, setTimerSeconds] = useState(0);
 
-  // Load quizzes
+  // Load quizzes with safety timeout to prevent infinite spinner
   useEffect(() => {
     let isMounted = true;
     setIsLoading(true);
+
+    const safetyTimer = setTimeout(() => {
+      if (isMounted) setIsLoading(false);
+    }, 4000);
+
     getQuizzesForDocument(docId)
       .then((data) => {
         if (isMounted) {
-          setQuizzes(data);
+          clearTimeout(safetyTimer);
+          if (Array.isArray(data) && data.length > 0) {
+            setQuizzes(data);
+          }
           setIsLoading(false);
         }
       })
-      .catch(() => {
-        if (isMounted) setIsLoading(false);
+      .catch((err) => {
+        if (isMounted) {
+          clearTimeout(safetyTimer);
+          setIsLoading(false);
+        }
       });
+
     return () => {
       isMounted = false;
+      clearTimeout(safetyTimer);
     };
   }, [docId]);
 
@@ -149,7 +162,7 @@ export default function DocumentQuizPage() {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
         <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-        <p className="text-sm text-muted-foreground font-medium">Generating AI Quiz from document passages...</p>
+        <p className="text-sm text-muted-foreground font-medium">Loading AI Quiz from document passages...</p>
       </div>
     );
   }
@@ -161,7 +174,7 @@ export default function DocumentQuizPage() {
           <HelpCircle className="h-8 w-8" />
         </div>
         <div className="space-y-2">
-          <h2 className="text-2xl font-bold tracking-tight">No Quiz Generated Yet</h2>
+          <h2 className="text-2xl font-bold tracking-tight">Generate Interactive Quiz</h2>
           <p className="text-sm text-muted-foreground">
             Generate an interactive comprehension quiz for <strong>{doc?.title || "this document"}</strong>.
           </p>
@@ -204,7 +217,7 @@ export default function DocumentQuizPage() {
             <button
               onClick={() => setMode("learning")}
               className={cn(
-                "px-2.5 py-1 rounded-md font-medium transition-all",
+                "px-2.5 py-1 rounded-md font-medium transition-all cursor-pointer",
                 mode === "learning"
                   ? "bg-background text-foreground shadow-xs font-semibold"
                   : "text-muted-foreground hover:text-foreground"
@@ -215,7 +228,7 @@ export default function DocumentQuizPage() {
             <button
               onClick={() => setMode("exam")}
               className={cn(
-                "px-2.5 py-1 rounded-md font-medium transition-all",
+                "px-2.5 py-1 rounded-md font-medium transition-all cursor-pointer",
                 mode === "exam"
                   ? "bg-background text-foreground shadow-xs font-semibold"
                   : "text-muted-foreground hover:text-foreground"

@@ -124,8 +124,8 @@ interface MockDataContextType {
   documents: DocumentItem[];
   summaries: Record<string, SummaryItem>;
   conversations: ConversationItem[];
-  quizzes: Record<string, QuizItem[]>; // docId -> quizzes
-  flashcardSets: Record<string, FlashcardSet>; // docId -> deck
+  quizzes: Record<string, QuizItem[]>;
+  flashcardSets: Record<string, FlashcardSet>;
   allFlashcardSets: FlashcardSet[];
   quizAttempts: QuizAttempt[];
   userProfile: UserProfile;
@@ -170,44 +170,47 @@ export function MockDataProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   const refreshData = async () => {
-    setIsLoading(true);
     try {
       const docsData = await api.getDocuments();
-      const mappedDocs: DocumentItem[] = docsData.map((d: any) => ({
-        id: d.id,
-        title: d.title,
-        fileName: d.file_name,
-        fileSize: d.file_size,
-        pageCount: d.page_count,
-        uploadDate: d.upload_date,
-        status: d.status || "ready",
-        chunkCount: d.chunk_count || 0,
-        vectorCount: d.vector_count || 0,
-      }));
-      setDocuments(mappedDocs);
+      if (Array.isArray(docsData)) {
+        const mappedDocs: DocumentItem[] = docsData.map((d: any) => ({
+          id: d.id,
+          title: d.title,
+          fileName: d.file_name,
+          fileSize: d.file_size,
+          pageCount: d.page_count,
+          uploadDate: d.upload_date,
+          status: d.status || "ready",
+          chunkCount: d.chunk_count || 0,
+          vectorCount: d.vector_count || 0,
+        }));
+        setDocuments(mappedDocs);
+      }
 
       // Fetch conversations history
-      const convsData = await api.getConversations();
-      const mappedConvs: ConversationItem[] = convsData.map((c: any) => ({
-        id: c.id,
-        documentId: c.document_id,
-        documentTitle: c.document_title || "Academic Document",
-        title: c.title,
-        createdAt: c.created_at,
-        messages: (c.messages || []).map((m: any) => ({
-          id: m.id,
-          conversationId: m.conversation_id,
-          role: m.role,
-          message: m.message,
-          createdAt: m.created_at,
-          citations: m.citations || [],
-        })),
-      }));
-      setConversations(mappedConvs);
+      api.getConversations().then((convsData) => {
+        if (Array.isArray(convsData)) {
+          const mappedConvs: ConversationItem[] = convsData.map((c: any) => ({
+            id: c.id,
+            documentId: c.document_id,
+            documentTitle: c.document_title || "Academic Document",
+            title: c.title,
+            createdAt: c.created_at,
+            messages: (c.messages || []).map((m: any) => ({
+              id: m.id,
+              conversationId: m.conversation_id,
+              role: m.role,
+              message: m.message,
+              createdAt: m.created_at,
+              citations: m.citations || [],
+            })),
+          }));
+          setConversations(mappedConvs);
+        }
+      }).catch(() => {});
 
       // Fetch quiz attempts history
-      try {
-        const attemptsData = await api.getQuizAttempts();
+      api.getQuizAttempts().then((attemptsData) => {
         if (Array.isArray(attemptsData)) {
           setQuizAttempts(attemptsData.map((a: any) => ({
             id: a.id,
@@ -224,13 +227,10 @@ export function MockDataProvider({ children }: { children: React.ReactNode }) {
             createdAt: a.created_at,
           })));
         }
-      } catch (e) {
-        console.warn("Quiz attempts fetch notice:", e);
-      }
+      }).catch(() => {});
 
       // Fetch all flashcard sets
-      try {
-        const flashSets = await api.getAllFlashcardSets();
+      api.getAllFlashcardSets().then((flashSets) => {
         if (Array.isArray(flashSets)) {
           const mappedSets: FlashcardSet[] = flashSets.map((s: any) => ({
             id: s.id,
@@ -250,19 +250,20 @@ export function MockDataProvider({ children }: { children: React.ReactNode }) {
           }));
           setAllFlashcardSets(mappedSets);
         }
-      } catch (e) {
-        console.warn("Flashcard sets fetch notice:", e);
-      }
+      }).catch(() => {});
 
       // Fetch User profile
-      const profileData = await api.getProfile();
-      setUserProfile({
-        fullName: profileData.full_name || "Academic Scholar",
-        email: profileData.email || "student@university.edu",
-        avatarUrl: profileData.avatar_url || "",
-      });
+      api.getProfile().then((profileData) => {
+        if (profileData) {
+          setUserProfile({
+            fullName: profileData.full_name || "Academic Scholar",
+            email: profileData.email || "student@university.edu",
+            avatarUrl: profileData.avatar_url || "",
+          });
+        }
+      }).catch(() => {});
     } catch (err) {
-      console.warn("[Backend API Connection Notice] Operating with fallback state until FastAPI backend is running:", err);
+      console.warn("[Backend API Notice]:", err);
     } finally {
       setIsLoading(false);
     }
@@ -276,7 +277,23 @@ export function MockDataProvider({ children }: { children: React.ReactNode }) {
     try {
       const doc = await api.uploadDocument(file);
       const newDocId = doc.id;
-      await refreshData();
+
+      // Optimistically update document list immediately
+      const newDocItem: DocumentItem = {
+        id: doc.id,
+        title: doc.title,
+        fileName: doc.file_name,
+        fileSize: doc.file_size,
+        pageCount: doc.page_count,
+        uploadDate: doc.upload_date || new Date().toISOString(),
+        status: doc.status || "ready",
+        chunkCount: doc.chunk_count || 0,
+        vectorCount: doc.vector_count || 0,
+      };
+      setDocuments((prev) => [newDocItem, ...prev.filter((d) => d.id !== newDocId)]);
+
+      // Background refresh
+      refreshData().catch(() => {});
       return newDocId;
     } catch (e) {
       console.error("Upload error:", e);
