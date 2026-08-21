@@ -1,5 +1,3 @@
-"use client";
-
 import React from "react";
 import Link from "next/link";
 import { Bot, ArrowLeft } from "lucide-react";
@@ -12,7 +10,7 @@ export default function NotFound() {
         <Bot className="h-8 w-8" />
       </div>
       <h1 className="text-6xl font-extrabold tracking-tight text-foreground">404</h1>
-      <h2 className="mt-3 text-xl font-semibold text-foreground">Document or Page Not Found</h2>
+      <h2 className="mt-3 text-xl font-semibold text-foreground">Page Not Found</h2>
       <p className="mt-2 text-sm text-muted-foreground max-w-md">
         The page or document section you are looking for doesn&apos;t exist or may have been moved.
       </p>

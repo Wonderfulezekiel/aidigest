@@ -10,7 +10,6 @@ import {
   ArrowLeft,
   Award,
   Layers,
-  Sparkles,
   Download,
   HardDrive,
 } from "lucide-react";
@@ -30,18 +29,18 @@ export default function DocumentDetailsPage() {
 
   if (!doc) {
     return (
-      <div className="text-center py-16 space-y-4">
+      <div className="text-center py-16 space-y-4 px-4">
         <h2 className="text-xl font-bold">Document Not Found</h2>
-        <p className="text-sm text-muted-foreground">The requested document could not be located in your library.</p>
+        <p className="text-xs sm:text-sm text-muted-foreground">The requested document could not be located in your library.</p>
         <Link href="/documents">
-          <Button variant="outline">Return to Documents</Button>
+          <Button variant="outline" size="sm">Return to Documents</Button>
         </Link>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto animate-in fade-in-50 pb-12">
+    <div className="space-y-5 sm:space-y-6 max-w-5xl mx-auto w-full max-w-full overflow-hidden pb-12">
       {/* Back Link */}
       <Link href="/documents" className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
         <ArrowLeft className="h-3.5 w-3.5" />
@@ -49,43 +48,43 @@ export default function DocumentDetailsPage() {
       </Link>
 
       {/* Main Metadata Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border pb-6">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border pb-4 sm:pb-6 w-full">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <Badge variant="success">Pinecone Indexed</Badge>
-            <span className="text-xs font-mono text-muted-foreground">ID: {doc.id}</span>
+            <Badge variant="success" className="text-[10px]">Indexed</Badge>
+            <span className="text-xs font-mono text-muted-foreground truncate">ID: {doc.id}</span>
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">{doc.title}</h1>
-          <p className="text-xs text-muted-foreground flex items-center gap-2">
-            <span>Filename: {doc.fileName}</span>
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground break-words">{doc.title}</h1>
+          <p className="text-xs text-muted-foreground flex items-center gap-2 flex-wrap">
+            <span className="truncate">File: {doc.fileName}</span>
             <span>•</span>
             <span>Uploaded: {formatDate(doc.uploadDate)}</span>
           </p>
         </div>
 
         {/* Action Buttons Grid */}
-        <div className="flex items-center gap-2 flex-wrap">
-          <Link href={`/documents/${doc.id}/summary`}>
-            <Button variant="outline" size="sm" className="gap-1.5 text-xs">
-              <BookOpen className="h-4 w-4" />
+        <div className="grid grid-cols-2 sm:flex sm:flex-row items-center gap-2 w-full md:w-auto">
+          <Link href={`/documents/${doc.id}/summary`} className="w-full sm:w-auto">
+            <Button variant="outline" size="sm" className="gap-1.5 text-xs w-full">
+              <BookOpen className="h-3.5 w-3.5" />
               Summary
             </Button>
           </Link>
-          <Link href={`/documents/${doc.id}/chat`}>
-            <Button variant="outline" size="sm" className="gap-1.5 text-xs">
-              <MessageSquare className="h-4 w-4" />
-              Chat AI
+          <Link href={`/documents/${doc.id}/chat`} className="w-full sm:w-auto">
+            <Button variant="outline" size="sm" className="gap-1.5 text-xs w-full">
+              <MessageSquare className="h-3.5 w-3.5" />
+              Chat
             </Button>
           </Link>
-          <Link href={`/documents/${doc.id}/quiz`}>
-            <Button variant="outline" size="sm" className="gap-1.5 text-xs border-primary/40 text-primary">
-              <Award className="h-4 w-4" />
-              Take Quiz
+          <Link href={`/documents/${doc.id}/quiz`} className="w-full sm:w-auto">
+            <Button variant="outline" size="sm" className="gap-1.5 text-xs border-primary/40 text-primary w-full">
+              <Award className="h-3.5 w-3.5" />
+              Quiz
             </Button>
           </Link>
-          <Link href={`/documents/${doc.id}/flashcards`}>
-            <Button size="sm" className="gap-1.5 text-xs">
-              <Layers className="h-4 w-4" />
+          <Link href={`/documents/${doc.id}/flashcards`} className="w-full sm:w-auto">
+            <Button size="sm" className="gap-1.5 text-xs w-full">
+              <Layers className="h-3.5 w-3.5" />
               Flashcards
             </Button>
           </Link>
@@ -93,14 +92,14 @@ export default function DocumentDetailsPage() {
       </div>
 
       {/* Quick Action Study Cards Banner */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <Link href={`/documents/${doc.id}/summary`} className="block group">
           <Card className="p-4 border-border hover:border-primary/50 transition-all h-full flex flex-col justify-between">
             <div className="space-y-2">
-              <div className="h-9 w-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
+              <div className="h-8 w-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
                 <BookOpen className="h-4 w-4" />
               </div>
-              <h3 className="font-bold text-sm text-foreground">AI Summaries</h3>
+              <h3 className="font-bold text-sm text-foreground">Summaries</h3>
               <p className="text-xs text-muted-foreground">Executive overviews, tables, and core concepts.</p>
             </div>
             <span className="text-xs text-primary font-semibold mt-3 inline-block group-hover:underline">
@@ -112,10 +111,10 @@ export default function DocumentDetailsPage() {
         <Link href={`/documents/${doc.id}/chat`} className="block group">
           <Card className="p-4 border-border hover:border-primary/50 transition-all h-full flex flex-col justify-between">
             <div className="space-y-2">
-              <div className="h-9 w-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
+              <div className="h-8 w-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
                 <MessageSquare className="h-4 w-4" />
               </div>
-              <h3 className="font-bold text-sm text-foreground">RAG Chat</h3>
+              <h3 className="font-bold text-sm text-foreground">Document Chat</h3>
               <p className="text-xs text-muted-foreground">Ask questions with exact page citations.</p>
             </div>
             <span className="text-xs text-primary font-semibold mt-3 inline-block group-hover:underline">
@@ -127,14 +126,14 @@ export default function DocumentDetailsPage() {
         <Link href={`/documents/${doc.id}/quiz`} className="block group">
           <Card className="p-4 border-border hover:border-primary/50 transition-all h-full flex flex-col justify-between bg-primary/5">
             <div className="space-y-2">
-              <div className="h-9 w-9 rounded-lg bg-primary text-primary-foreground flex items-center justify-center shadow-xs">
+              <div className="h-8 w-8 rounded-lg bg-primary text-primary-foreground flex items-center justify-center shadow-xs">
                 <Award className="h-4 w-4" />
               </div>
               <h3 className="font-bold text-sm text-foreground">Interactive Quiz</h3>
-              <p className="text-xs text-muted-foreground">Adaptive learning quiz with instant AI feedback.</p>
+              <p className="text-xs text-muted-foreground">Learning quiz with instant feedback.</p>
             </div>
             <span className="text-xs text-primary font-semibold mt-3 inline-block group-hover:underline">
-              Take AI Quiz &rarr;
+              Take Quiz &rarr;
             </span>
           </Card>
         </Link>
@@ -142,7 +141,7 @@ export default function DocumentDetailsPage() {
         <Link href={`/documents/${doc.id}/flashcards`} className="block group">
           <Card className="p-4 border-border hover:border-primary/50 transition-all h-full flex flex-col justify-between bg-emerald-500/5">
             <div className="space-y-2">
-              <div className="h-9 w-9 rounded-lg bg-emerald-600 text-white flex items-center justify-center shadow-xs">
+              <div className="h-8 w-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center shadow-xs">
                 <Layers className="h-4 w-4" />
               </div>
               <h3 className="font-bold text-sm text-foreground">3D Flashcards</h3>
@@ -156,65 +155,65 @@ export default function DocumentDetailsPage() {
       </div>
 
       {/* Technical Metadata Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
         <Card className="p-4">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
-              <HardDrive className="h-5 w-5" />
+            <div className="h-9 w-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
+              <HardDrive className="h-4 w-4" />
             </div>
             <div>
-              <p className="text-xs text-muted-foreground uppercase font-medium">File Size</p>
-              <p className="text-base font-bold text-foreground">{formatBytes(doc.fileSize)}</p>
+              <p className="text-[11px] text-muted-foreground uppercase font-medium">File Size</p>
+              <p className="text-sm sm:text-base font-bold text-foreground">{formatBytes(doc.fileSize)}</p>
             </div>
           </div>
         </Card>
 
         <Card className="p-4">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
-              <FileText className="h-5 w-5" />
+            <div className="h-9 w-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
+              <FileText className="h-4 w-4" />
             </div>
             <div>
-              <p className="text-xs text-muted-foreground uppercase font-medium">Total Pages</p>
-              <p className="text-base font-bold text-foreground">{doc.pageCount} pages</p>
+              <p className="text-[11px] text-muted-foreground uppercase font-medium">Total Pages</p>
+              <p className="text-sm sm:text-base font-bold text-foreground">{doc.pageCount} pages</p>
             </div>
           </div>
         </Card>
 
         <Card className="p-4">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
-              <Layers className="h-5 w-5" />
+            <div className="h-9 w-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
+              <Layers className="h-4 w-4" />
             </div>
             <div>
-              <p className="text-xs text-muted-foreground uppercase font-medium">Pinecone Vectors</p>
-              <p className="text-base font-bold text-foreground">{doc.vectorCount} chunks</p>
+              <p className="text-[11px] text-muted-foreground uppercase font-medium">Vectors</p>
+              <p className="text-sm sm:text-base font-bold text-foreground">{doc.vectorCount} passages</p>
             </div>
           </div>
         </Card>
       </div>
 
       {/* Document Information Card */}
-      <Card className="shadow-xs">
-        <CardHeader className="flex flex-row items-center justify-between border-b border-border pb-4">
+      <Card className="shadow-xs w-full max-w-full">
+        <CardHeader className="flex flex-row items-center justify-between border-b border-border pb-3">
           <div>
-            <CardTitle className="text-base">Document Content Preview</CardTitle>
-            <CardDescription className="text-xs">Extracted text passages and indexed study context</CardDescription>
+            <CardTitle className="text-sm sm:text-base">Document Preview</CardTitle>
+            <CardDescription className="text-xs">Extracted passages and study context</CardDescription>
           </div>
-          <Button variant="outline" size="sm" className="gap-2" onClick={() => alert("Downloading document...")}>
-            <Download className="h-4 w-4" />
-            Download PDF
+          <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => alert("Downloading document...")}>
+            <Download className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Download</span>
           </Button>
         </CardHeader>
-        <CardContent className="pt-6">
-          <div className="h-64 rounded-lg border border-border bg-muted/20 p-6 font-mono text-xs text-muted-foreground overflow-y-auto space-y-3">
-            <p className="text-foreground font-bold text-sm underline decoration-muted-foreground/30">
+        <CardContent className="pt-4">
+          <div className="h-56 rounded-lg border border-border bg-muted/20 p-4 font-mono text-xs text-muted-foreground overflow-y-auto space-y-2.5 break-words">
+            <p className="text-foreground font-bold text-xs sm:text-sm underline decoration-muted-foreground/30 break-words">
               {doc.title.toUpperCase()}
             </p>
-            <p className="leading-relaxed">
+            <p className="leading-relaxed break-words">
               [Indexed Passage #1]: Course content introduces fundamental principles, requirements engineering, data gathering techniques, qualitative interviews, and quantitative system evaluations.
             </p>
-            <div className="p-3 rounded border border-border bg-card text-foreground">
+            <div className="p-2.5 rounded border border-border bg-card text-foreground break-words">
               <span className="font-semibold text-emerald-500">Key Focus:</span> &quot;Establishing clear requirements is the foundation of successful engineering projects.&quot;
             </div>
           </div>

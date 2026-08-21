@@ -9,7 +9,7 @@ import {
   Bot,
   User,
   FileText,
-  Sparkles,
+  CheckCircle2,
 } from "lucide-react";
 import { useMockData } from "@/context/MockDataContext";
 import { Button } from "@/components/ui/Button";
@@ -40,11 +40,11 @@ export default function DocumentChatPage() {
 
   if (!doc || !conversation) {
     return (
-      <div className="text-center py-16 space-y-4">
+      <div className="text-center py-16 space-y-4 px-4">
         <h2 className="text-xl font-bold">Document Not Found</h2>
-        <p className="text-sm text-muted-foreground">The requested document for chat does not exist.</p>
+        <p className="text-xs sm:text-sm text-muted-foreground">The requested document for chat does not exist.</p>
         <Link href="/documents">
-          <Button variant="outline">Back to Library</Button>
+          <Button variant="outline" size="sm">Back to Library</Button>
         </Link>
       </div>
     );
@@ -64,14 +64,14 @@ export default function DocumentChatPage() {
   const samplePrompts = [
     "Explain in simple terms",
     "Key takeaways",
-    "Exam summary",
-    "Main formulas & definitions",
+    "Exam review summary",
+    "Core definitions",
   ];
 
   return (
-    <div className="flex flex-col h-[calc(100vh-6.5rem)] animate-in fade-in-50">
+    <div className="flex flex-col h-[calc(100vh-6.5rem)] animate-in fade-in-50 w-full max-w-full overflow-hidden">
       {/* Header bar */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b border-border pb-3 mb-3 gap-2">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b border-border pb-3 mb-3 gap-2 w-full">
         <div className="flex items-center gap-2.5 min-w-0 w-full sm:w-auto">
           <Link href="/documents" className="text-muted-foreground hover:text-foreground shrink-0">
             <ArrowLeft className="h-4 w-4" />
@@ -82,7 +82,7 @@ export default function DocumentChatPage() {
                 Chat: {doc.title}
               </h1>
               <Badge variant="success" className="text-[10px] gap-1 shrink-0">
-                <Sparkles className="h-3 w-3" />
+                <CheckCircle2 className="h-3 w-3" />
                 Active
               </Badge>
             </div>
@@ -108,7 +108,7 @@ export default function DocumentChatPage() {
       </div>
 
       {/* Main Dual Pane Content */}
-      <div className="flex flex-1 gap-4 overflow-hidden min-h-0">
+      <div className="flex flex-1 gap-4 overflow-hidden min-h-0 w-full">
         {/* Left Pane: PDF Context Preview */}
         {showPdfPane && (
           <div className="hidden md:flex w-1/3 flex-col rounded-xl border border-border bg-card overflow-hidden">
@@ -132,22 +132,22 @@ export default function DocumentChatPage() {
         )}
 
         {/* Right Pane: AI Chat Box */}
-        <div className="flex-1 flex flex-col rounded-xl border border-border bg-card overflow-hidden min-w-0">
+        <div className="flex-1 flex flex-col rounded-xl border border-border bg-card overflow-hidden min-w-0 w-full">
           {/* Chat Messages List */}
-          <div className="flex-1 p-3 sm:p-4 overflow-y-auto space-y-4">
+          <div className="flex-1 p-3 sm:p-4 overflow-y-auto space-y-3 sm:space-y-4">
             {conversation.messages.map((msg) => (
               <div
                 key={msg.id}
-                className={`flex gap-2.5 ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+                className={`flex gap-2 sm:gap-2.5 ${msg.role === "user" ? "justify-end" : "justify-start"}`}
               >
                 {msg.role === "assistant" && (
-                  <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold shrink-0 mt-1">
+                  <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold shrink-0 mt-0.5">
                     <Bot className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                   </div>
                 )}
 
                 <div
-                  className={`max-w-[90%] sm:max-w-[85%] rounded-xl p-3 sm:p-4 text-xs sm:text-sm leading-relaxed space-y-2 ${
+                  className={`max-w-[92%] sm:max-w-[85%] rounded-xl p-3 sm:p-4 text-xs sm:text-sm leading-relaxed space-y-2 break-words ${
                     msg.role === "user"
                       ? "bg-primary text-primary-foreground font-medium shadow-xs"
                       : "bg-muted/50 border border-border text-foreground"
@@ -157,9 +157,9 @@ export default function DocumentChatPage() {
 
                   {msg.citations && msg.citations.length > 0 && (
                     <div className="pt-2 border-t border-border/60 space-y-1.5">
-                      <span className="text-[11px] font-semibold opacity-80 block">Document References:</span>
+                      <span className="text-[11px] font-semibold opacity-80 block">References:</span>
                       {msg.citations.map((cit, idx) => (
-                        <div key={idx} className="p-2 rounded-lg bg-background/80 text-[11px] font-mono border border-border/60 shadow-2xs">
+                        <div key={idx} className="p-2 rounded-lg bg-background/80 text-[11px] font-mono border border-border/60 shadow-2xs break-words">
                           <span className="font-bold text-emerald-500 mr-1.5">Page {cit.page}:</span>
                           <span className="text-muted-foreground">&quot;{cit.snippet}&quot;</span>
                         </div>
@@ -169,7 +169,7 @@ export default function DocumentChatPage() {
                 </div>
 
                 {msg.role === "user" && (
-                  <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-lg bg-secondary text-secondary-foreground font-bold shrink-0 mt-1">
+                  <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-lg bg-secondary text-secondary-foreground font-bold shrink-0 mt-0.5">
                     <User className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                   </div>
                 )}
@@ -183,7 +183,7 @@ export default function DocumentChatPage() {
                 </div>
                 <div className="rounded-xl p-3 sm:p-4 bg-muted/50 border border-border text-xs text-muted-foreground flex items-center gap-2">
                   <span className="animate-spin h-3.5 w-3.5 border-2 border-current border-t-transparent rounded-full" />
-                  <span>AI is thinking and analyzing document...</span>
+                  <span>Analyzing document...</span>
                 </div>
               </div>
             )}
@@ -198,7 +198,7 @@ export default function DocumentChatPage() {
                 onClick={() => {
                   setInputMessage(prompt);
                 }}
-                className="px-3 py-1.5 rounded-full border border-border bg-card hover:bg-accent text-muted-foreground hover:text-foreground shrink-0 transition-colors text-xs"
+                className="px-2.5 sm:px-3 py-1 rounded-full border border-border bg-card hover:bg-accent text-muted-foreground hover:text-foreground shrink-0 transition-colors text-[11px] sm:text-xs cursor-pointer"
               >
                 {prompt}
               </button>
@@ -209,15 +209,15 @@ export default function DocumentChatPage() {
           <form onSubmit={handleSend} className="p-2.5 sm:p-3 border-t border-border bg-card flex gap-2">
             <input
               type="text"
-              placeholder="Ask any question about this document..."
+              placeholder="Ask a question about this document..."
               value={inputMessage}
               onChange={(e) => setInputMessage(e.target.value)}
               disabled={isSending}
               className="flex-1 h-9 sm:h-10 rounded-md border border-input bg-background px-3 text-xs sm:text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring transition-colors"
             />
-            <Button type="submit" size="md" disabled={!inputMessage.trim() || isSending} className="gap-1.5 h-9 sm:h-10 px-3.5">
-              <span className="hidden sm:inline">Send</span>
-              <Send className="h-4 w-4" />
+            <Button type="submit" size="md" disabled={!inputMessage.trim() || isSending} className="gap-1.5 h-9 sm:h-10 px-3 sm:px-3.5">
+              <span className="hidden sm:inline text-xs">Send</span>
+              <Send className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             </Button>
           </form>
         </div>

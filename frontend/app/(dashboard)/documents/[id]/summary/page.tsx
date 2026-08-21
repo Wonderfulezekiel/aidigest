@@ -11,7 +11,8 @@ import {
   Check,
   FileText,
   HelpCircle,
-  Sparkles,
+  Award,
+  Layers,
 } from "lucide-react";
 import { useMockData } from "@/context/MockDataContext";
 import { Button } from "@/components/ui/Button";
@@ -32,11 +33,11 @@ export default function DocumentSummaryPage() {
 
   if (!doc || !summary) {
     return (
-      <div className="text-center py-16 space-y-4">
+      <div className="text-center py-16 space-y-4 px-4">
         <h2 className="text-xl font-bold">Summary Not Found</h2>
-        <p className="text-sm text-muted-foreground">No generated summary exists for this document ID.</p>
+        <p className="text-xs sm:text-sm text-muted-foreground">No generated summary exists for this document ID.</p>
         <Link href="/documents">
-          <Button variant="outline">Back to Library</Button>
+          <Button variant="outline" size="sm">Back to Library</Button>
         </Link>
       </div>
     );
@@ -50,33 +51,32 @@ export default function DocumentSummaryPage() {
   };
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto animate-in fade-in-50">
+    <div className="space-y-5 sm:space-y-6 max-w-5xl mx-auto w-full max-w-full overflow-hidden pb-12">
       {/* Top Breadcrumb & Actions */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border pb-4">
         <div className="space-y-1">
           <Link href="/documents" className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground mb-1">
             <ArrowLeft className="h-3.5 w-3.5" />
             Back to Documents
           </Link>
           <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
-            <BookOpen className="h-6 w-6 text-primary" />
-            AI Document Summary
+            <BookOpen className="h-5 w-5 sm:h-6 sm:w-6 text-primary shrink-0" />
+            Document Summary
           </h1>
-          <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-            <Sparkles className="h-3.5 w-3.5 text-primary" />
-            Synthesized analysis for {doc.title} ({doc.pageCount} pages).
+          <p className="text-xs text-muted-foreground truncate">
+            {doc.title} ({doc.pageCount} pages)
           </p>
         </div>
 
-        <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
-          <Button variant="outline" size="sm" onClick={handleCopy} className="gap-1.5">
-            {copied ? <Check className="h-4 w-4 text-emerald-500" /> : <Copy className="h-4 w-4" />}
-            <span>{copied ? "Copied!" : "Copy Text"}</span>
+        <div className="flex items-center gap-2 flex-wrap">
+          <Button variant="outline" size="sm" onClick={handleCopy} className="gap-1.5 text-xs">
+            {copied ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
+            <span>{copied ? "Copied!" : "Copy"}</span>
           </Button>
           <Link href={`/documents/${doc.id}/chat`}>
-            <Button size="sm" className="gap-2">
-              <MessageSquare className="h-4 w-4" />
-              Chat about Document
+            <Button size="sm" className="gap-1.5 text-xs">
+              <MessageSquare className="h-3.5 w-3.5" />
+              Chat
             </Button>
           </Link>
         </div>
@@ -84,10 +84,10 @@ export default function DocumentSummaryPage() {
 
       {/* Summary View Tab Toggle */}
       <div className="flex justify-between items-center">
-        <div className="inline-flex rounded-lg border border-border bg-card p-1">
+        <div className="inline-flex rounded-lg border border-border bg-card p-1 text-xs">
           <button
             onClick={() => setSummaryTab("short")}
-            className={`px-3.5 py-1.5 text-xs sm:text-sm font-medium rounded-md transition-colors ${
+            className={`px-3 py-1.5 font-medium rounded-md transition-colors cursor-pointer ${
               summaryTab === "short"
                 ? "bg-primary text-primary-foreground shadow-xs"
                 : "text-muted-foreground hover:text-foreground"
@@ -97,7 +97,7 @@ export default function DocumentSummaryPage() {
           </button>
           <button
             onClick={() => setSummaryTab("detailed")}
-            className={`px-3.5 py-1.5 text-xs sm:text-sm font-medium rounded-md transition-colors ${
+            className={`px-3 py-1.5 font-medium rounded-md transition-colors cursor-pointer ${
               summaryTab === "detailed"
                 ? "bg-primary text-primary-foreground shadow-xs"
                 : "text-muted-foreground hover:text-foreground"
@@ -109,22 +109,22 @@ export default function DocumentSummaryPage() {
       </div>
 
       {/* Main Summary Content Box */}
-      <Card className="shadow-lg border-border">
-        <CardHeader>
+      <Card className="shadow-xs border-border w-full max-w-full">
+        <CardHeader className="pb-3">
           <CardTitle className="text-base font-semibold">
-            {summaryTab === "short" ? "Executive Summary" : "In-Depth Academic Overview"}
+            {summaryTab === "short" ? "Executive Summary" : "In-Depth Academic Analysis"}
           </CardTitle>
           <CardDescription className="text-xs">
-            Synthesized key arguments, theoretical proofs, and domain conclusions
+            Structured analysis, core concepts, and key takeaways
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-4 overflow-x-auto">
           <MarkdownRenderer content={summaryTab === "short" ? summary.shortSummary : summary.detailedSummary} />
         </CardContent>
       </Card>
 
       {/* Structured Key Sections Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
         {/* Key Topics Tag Cloud */}
         <Card>
           <CardHeader className="pb-3">
@@ -133,9 +133,9 @@ export default function DocumentSummaryPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-1.5 sm:gap-2">
               {summary.keyTopics.map((topic, idx) => (
-                <Badge key={idx} variant="outline" className="px-3 py-1 text-xs">
+                <Badge key={idx} variant="outline" className="px-2.5 py-0.5 text-[11px]">
                   {topic}
                 </Badge>
               ))}
@@ -150,9 +150,9 @@ export default function DocumentSummaryPage() {
               <BookOpen className="h-4 w-4 text-primary" /> Important Definitions
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="space-y-2.5">
             {summary.definitions.map((def, idx) => (
-              <div key={idx} className="p-3 rounded-lg border border-border bg-muted/20 text-xs">
+              <div key={idx} className="p-2.5 sm:p-3 rounded-lg border border-border bg-muted/20 text-xs break-words">
                 <span className="font-bold text-foreground block">{def.term}:</span>
                 <span className="text-muted-foreground mt-0.5 block">{def.definition}</span>
               </div>
@@ -167,10 +167,10 @@ export default function DocumentSummaryPage() {
               <HelpCircle className="h-4 w-4 text-primary" /> Core Concepts & Explanations
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="space-y-2.5">
             {summary.importantConcepts.map((concept, idx) => (
-              <div key={idx} className="p-4 rounded-lg border border-border bg-card space-y-1">
-                <p className="font-semibold text-sm text-foreground">{concept.term}</p>
+              <div key={idx} className="p-3 sm:p-4 rounded-lg border border-border bg-card space-y-1 break-words">
+                <p className="font-semibold text-xs sm:text-sm text-foreground">{concept.term}</p>
                 <p className="text-xs text-muted-foreground leading-relaxed">{concept.explanation}</p>
               </div>
             ))}
@@ -179,19 +179,19 @@ export default function DocumentSummaryPage() {
       </div>
 
       {/* Main Ideas & Conclusion */}
-      <Card className="border-border">
+      <Card className="border-border w-full max-w-full">
         <CardHeader className="pb-3">
-          <CardTitle className="text-base font-semibold">Main Takeaways & Conclusion</CardTitle>
+          <CardTitle className="text-base font-semibold">Key Takeaways & Conclusion</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          <ul className="list-disc list-inside space-y-2 text-xs sm:text-sm text-muted-foreground">
+          <ul className="list-disc list-inside space-y-1.5 text-xs sm:text-sm text-muted-foreground break-words">
             {summary.mainIdeas.map((idea, idx) => (
               <li key={idx} className="leading-relaxed">
                 <span className="text-foreground">{idea}</span>
               </li>
             ))}
           </ul>
-          <div className="mt-4 p-4 rounded-lg bg-primary/5 border border-primary/20 text-xs sm:text-sm text-foreground">
+          <div className="mt-3 p-3 sm:p-4 rounded-lg bg-primary/5 border border-primary/20 text-xs sm:text-sm text-foreground break-words">
             <span className="font-bold block mb-1">Conclusion:</span>
             {summary.conclusion}
           </div>

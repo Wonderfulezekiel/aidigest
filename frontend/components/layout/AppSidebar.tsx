@@ -13,7 +13,7 @@ import {
   User,
   Settings,
   Plus,
-  Sparkles,
+  Bot,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
@@ -32,7 +32,7 @@ export function AppSidebar({ className, onNavigate }: AppSidebarProps) {
     { name: "Upload PDF", href: "/upload", icon: Upload },
     { name: "My Documents", href: "/documents", icon: FileText },
     { name: "Chat History", href: "/chat/history", icon: MessageSquare },
-    { name: "AI Quizzes", href: "/quiz", icon: Award },
+    { name: "Quizzes", href: "/quiz", icon: Award },
     { name: "Flashcards", href: "/flashcards", icon: Layers },
     { name: "Profile", href: "/profile", icon: User },
     { name: "Settings", href: "/settings", icon: Settings },
@@ -90,8 +90,8 @@ export function AppSidebar({ className, onNavigate }: AppSidebarProps) {
       <div className="p-4 border-t border-border/80 text-xs text-muted-foreground flex items-center gap-2.5">
         <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
         <span className="font-medium text-foreground flex items-center gap-1.5">
-          <Sparkles className="h-3.5 w-3.5 text-primary" />
-          AI Intelligence Active
+          <Bot className="h-3.5 w-3.5 text-primary" />
+          Assistant Online
         </span>
       </div>
     </aside>
