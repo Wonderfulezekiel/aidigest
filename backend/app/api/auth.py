@@ -1,13 +1,16 @@
 import uuid
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, Dict, Any
 try:
     from app.database import supabase, safe_execute
 except ModuleNotFoundError:
     from backend.app.database import supabase, safe_execute
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
+
+# In-memory authentication cache synchronized with database
+_users_db: Dict[str, Dict[str, Any]] = {}
 
 class LoginRequest(BaseModel):
     email: str
@@ -27,62 +30,106 @@ class ResetPasswordRequest(BaseModel):
 
 @router.post("/login")
 async def login(req: LoginRequest):
-    data = safe_execute(supabase.table("profiles").select("*").eq("email", req.email), fallback=[])
-    if data:
+    email_clean = req.email.strip().lower()
+
+    if not email_clean or not req.password:
+        raise HTTPException(status_code=400, detail="Email and password are required")
+
+    # 1. Query database for user profile
+    data = safe_execute(supabase.table("profiles").select("*").eq("email", email_clean), fallback=None)
+
+    profile = None
+    if data and len(data) > 0:
         profile = data[0]
-        if profile.get("password") and profile["password"] != req.password:
-            raise HTTPException(status_code=400, detail="Invalid email or password")
-    else:
-        user_id = str(uuid.uuid4())
-        profile = {
-            "id": user_id,
-            "full_name": req.email.split("@")[0].replace(".", " ").title(),
-            "email": req.email,
-            "password": req.password,
-            "avatar_url": "",
-        }
-        safe_execute(supabase.table("profiles").insert(profile))
+    elif email_clean in _users_db:
+        profile = _users_db[email_clean]
+
+    # If user does not exist, reject login
+    if not profile:
+        raise HTTPException(
+            status_code=400,
+            detail="No account found with this email address. Please register first."
+        )
+
+    # 2. Strictly verify password
+    stored_password = profile.get("password")
+    if stored_password and stored_password != req.password:
+        raise HTTPException(
+            status_code=400,
+            detail="Incorrect password. Please verify and try again."
+        )
+
+    # Sync cache
+    _users_db[email_clean] = profile
 
     return {
-        "user": profile,
-        "token": f"token-{profile['id']}",
+        "user": {
+            "id": profile.get("id"),
+            "full_name": profile.get("full_name", email_clean.split("@")[0].title()),
+            "email": profile.get("email", email_clean),
+            "avatar_url": profile.get("avatar_url", ""),
+        },
+        "token": f"token-{profile.get('id')}",
     }
 
 @router.post("/register")
 async def register(req: RegisterRequest):
-    data = safe_execute(supabase.table("profiles").select("*").eq("email", req.email), fallback=[])
-    if data:
-        profile = data[0]
-        safe_execute(supabase.table("profiles").update({"full_name": req.full_name, "password": req.password}).eq("id", profile["id"]))
-        profile["full_name"] = req.full_name
-    else:
-        user_id = str(uuid.uuid4())
-        profile = {
-            "id": user_id,
-            "full_name": req.full_name,
-            "email": req.email,
-            "password": req.password,
-            "avatar_url": "",
-        }
-        safe_execute(supabase.table("profiles").insert(profile))
+    email_clean = req.email.strip().lower()
+    full_name_clean = req.full_name.strip()
+
+    if not email_clean or not req.password or not full_name_clean:
+        raise HTTPException(status_code=400, detail="Full name, email, and password are required")
+
+    # Check if user already exists
+    data = safe_execute(supabase.table("profiles").select("*").eq("email", email_clean), fallback=None)
+    if (data and len(data) > 0) or email_clean in _users_db:
+        raise HTTPException(
+            status_code=400,
+            detail="An account with this email address already exists. Please sign in instead."
+        )
+
+    user_id = str(uuid.uuid4())
+    profile = {
+        "id": user_id,
+        "full_name": full_name_clean,
+        "email": email_clean,
+        "password": req.password,
+        "avatar_url": "",
+    }
+
+    # Save to database
+    safe_execute(supabase.table("profiles").insert(profile))
+    # Cache in memory
+    _users_db[email_clean] = profile
 
     return {
-        "user": profile,
-        "token": f"token-{profile['id']}",
+        "user": {
+            "id": user_id,
+            "full_name": full_name_clean,
+            "email": email_clean,
+            "avatar_url": "",
+        },
+        "token": f"token-{user_id}",
     }
 
 @router.post("/forgot-password")
 async def forgot_password(req: ForgotPasswordRequest):
-    data = safe_execute(supabase.table("profiles").select("*").eq("email", req.email), fallback=[])
-    if not data:
+    email_clean = req.email.strip().lower()
+    data = safe_execute(supabase.table("profiles").select("*").eq("email", email_clean), fallback=None)
+    if not data and email_clean not in _users_db:
         raise HTTPException(status_code=404, detail="Email address not found")
-    return {"message": "Password reset link sent to your email", "email": req.email}
+    return {"message": "Password reset instructions have been sent to your email", "email": email_clean}
 
 @router.post("/reset-password")
 async def reset_password(req: ResetPasswordRequest):
+    if len(req.new_password) < 6:
+        raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
+
     data = safe_execute(supabase.table("profiles").select("*").limit(1), fallback=[])
     if data:
         prof = data[0]
         safe_execute(supabase.table("profiles").update({"password": req.new_password}).eq("id", prof["id"]))
+        if prof.get("email") in _users_db:
+            _users_db[prof["email"]]["password"] = req.new_password
         return {"message": "Password reset successfully"}
     raise HTTPException(status_code=400, detail="Invalid reset request")

@@ -24,10 +24,18 @@ export default function RegisterPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!fullName || !email || !password) return;
+
+    if (password.length < 6) {
+      setError("Password must be at least 6 characters");
+      return;
+    }
+
     if (password !== confirmPassword) {
       setError("Passwords do not match");
       return;
     }
+
     setError("");
     setIsLoading(true);
 
@@ -38,9 +46,8 @@ export default function RegisterPage() {
       }
       router.push("/dashboard");
     } catch (err: any) {
-      console.error(err);
-      updateUserProfile(fullName);
-      router.push("/dashboard");
+      console.error("Registration error:", err);
+      setError(err.message || "Failed to create account. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -88,7 +95,7 @@ export default function RegisterPage() {
             <Input
               label="Password"
               type="password"
-              placeholder="At least 8 characters"
+              placeholder="At least 6 characters"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required

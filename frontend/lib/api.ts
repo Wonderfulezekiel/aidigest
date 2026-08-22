@@ -1,7 +1,30 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
+const getApiBaseUrl = (): string => {
+  // 1. If explicit environment variable is configured (Vercel or local .env)
+  if (process.env.NEXT_PUBLIC_API_URL) {
+    let url = process.env.NEXT_PUBLIC_API_URL.trim().replace(/\/+$/, "");
+    if (!url.endsWith("/api")) {
+      url += "/api";
+    }
+    return url;
+  }
+
+  // 2. In browser client runtime
+  if (typeof window !== "undefined") {
+    if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {
+      return "http://localhost:8000/api";
+    }
+    // Live production default URL (Render backend)
+    return "https://aidigest.onrender.com/api";
+  }
+
+  return "https://aidigest.onrender.com/api";
+};
 
 export async function fetchApi(endpoint: string, options: RequestInit = {}) {
-  const url = `${API_BASE_URL}${endpoint}`;
+  const baseUrl = getApiBaseUrl();
+  const cleanEndpoint = endpoint.startsWith("/") ? endpoint : `/${endpoint}`;
+  const url = `${baseUrl}${cleanEndpoint}`;
+
   const response = await fetch(url, {
     ...options,
     headers: {
@@ -46,9 +69,10 @@ export const api = {
   getDocument: (id: string) => fetchApi(`/documents/${id}`),
   deleteDocument: (id: string) => fetchApi(`/documents/${id}`, { method: "DELETE" }),
   uploadDocument: async (file: File) => {
+    const baseUrl = getApiBaseUrl();
     const formData = new FormData();
     formData.append("file", file);
-    const res = await fetch(`${API_BASE_URL}/documents/upload`, {
+    const res = await fetch(`${baseUrl}/documents/upload`, {
       method: "POST",
       body: formData,
     });
