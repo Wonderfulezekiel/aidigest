@@ -38,7 +38,7 @@ async def upload_document(file: UploadFile = File(...)):
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Failed to read uploaded file: {str(e)}")
 
-    # 1. Text Extraction & Chunking
+    # 1. Text Extraction & Overlapping Chunking
     try:
         extraction = pdf_service.extract_text_and_chunks(file_bytes)
         page_count = extraction.get("page_count", 1)
@@ -57,7 +57,7 @@ async def upload_document(file: UploadFile = File(...)):
     doc_id = str(uuid.uuid4())
     clean_title = clean_val(file.filename.replace(".pdf", "").replace("_", " "))
 
-    # 2. Upload file to Supabase Storage
+    # 2. Upload file to Supabase Storage bucket
     storage_path = f"uploads/{doc_id}_{file.filename}"
     try:
         supabase.storage.from_("pdf-documents").upload(
@@ -171,5 +171,33 @@ async def get_document(doc_id: str):
 
 @router.delete("/{doc_id}")
 async def delete_document(doc_id: str):
-    safe_execute(supabase.table("documents").delete().eq("id", doc_id))
-    return {"message": "Document deleted successfully", "id": doc_id}
+    # 1. Fetch document to get storage_path
+    doc_data = safe_execute(supabase.table("documents").select("*").eq("id", doc_id), fallback=[])
+    if doc_data:
+        doc = doc_data[0]
+        storage_path = doc.get("storage_path")
+        if storage_path:
+            try:
+                supabase.storage.from_("pdf-documents").remove([storage_path])
+            except Exception as e:
+                print(f"[Delete] Supabase storage file remove notice: {e}")
+
+    # 2. Delete vectors from Pinecone
+    try:
+        await pinecone_service.delete_document_vectors(doc_id)
+    except Exception as e:
+        print(f"[Delete] Pinecone vector delete notice: {e}")
+
+    # 3. Cascading delete from database tables
+    try:
+        safe_execute(supabase.table("summaries").delete().eq("document_id", doc_id))
+        safe_execute(supabase.table("document_chunks").delete().eq("document_id", doc_id))
+        safe_execute(supabase.table("quizzes").delete().eq("document_id", doc_id))
+        safe_execute(supabase.table("flashcard_sets").delete().eq("document_id", doc_id))
+        safe_execute(supabase.table("quiz_attempts").delete().eq("document_id", doc_id))
+        safe_execute(supabase.table("conversations").delete().eq("document_id", doc_id))
+        safe_execute(supabase.table("documents").delete().eq("id", doc_id))
+    except Exception as e:
+        print(f"[Delete] Supabase database delete notice: {e}")
+
+    return {"message": "Document and all associated study materials deleted successfully", "id": doc_id}

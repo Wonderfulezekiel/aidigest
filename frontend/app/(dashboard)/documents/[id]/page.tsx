@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import {
@@ -12,18 +12,24 @@ import {
   Layers,
   Download,
   HardDrive,
+  Trash2,
+  AlertTriangle,
 } from "lucide-react";
 import { useMockData } from "@/context/MockDataContext";
 import { formatBytes, formatDate } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
+import { Modal } from "@/components/ui/Modal";
 
 export default function DocumentDetailsPage() {
   const params = useParams();
   const router = useRouter();
   const docId = params.id as string;
   const { documents, deleteDocument } = useMockData();
+
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   const doc = documents.find((d) => d.id === docId);
 
@@ -39,13 +45,37 @@ export default function DocumentDetailsPage() {
     );
   }
 
+  const handleDelete = async () => {
+    setIsDeleting(true);
+    try {
+      await deleteDocument(docId);
+      router.push("/documents");
+    } catch (err) {
+      console.error("Failed to delete document:", err);
+      setIsDeleting(false);
+      setShowDeleteModal(false);
+    }
+  };
+
   return (
     <div className="space-y-5 sm:space-y-6 max-w-5xl mx-auto w-full max-w-full overflow-hidden pb-12">
-      {/* Back Link */}
-      <Link href="/documents" className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
-        <ArrowLeft className="h-3.5 w-3.5" />
-        Back to Document Library
-      </Link>
+      {/* Back Link & Delete Header */}
+      <div className="flex items-center justify-between gap-3">
+        <Link href="/documents" className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
+          <ArrowLeft className="h-3.5 w-3.5" />
+          Back to Document Library
+        </Link>
+
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setShowDeleteModal(true)}
+          className="text-xs text-destructive hover:bg-destructive/10 hover:text-destructive gap-1.5"
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+          <span>Delete Document</span>
+        </Button>
+      </div>
 
       {/* Main Metadata Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border pb-4 sm:pb-6 w-full">
@@ -219,6 +249,48 @@ export default function DocumentDetailsPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Delete Confirmation Modal */}
+      <Modal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        title="Delete Document"
+        description="Permanently remove this document and its materials"
+      >
+        <div className="space-y-4">
+          <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-xs flex items-start gap-2.5 text-destructive">
+            <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
+            <div>
+              <p className="font-bold">Are you sure you want to delete this document?</p>
+              <p className="mt-1 text-muted-foreground">
+                This will permanently delete &ldquo;{doc.title}&rdquo; from cloud storage, database tables, quizzes, and vector indexes.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-end gap-2.5 pt-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowDeleteModal(false)}
+              disabled={isDeleting}
+              className="text-xs"
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={handleDelete}
+              isLoading={isDeleting}
+              className="text-xs gap-1.5"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              <span>Delete Permanently</span>
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

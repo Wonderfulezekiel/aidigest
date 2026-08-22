@@ -305,7 +305,8 @@ export default function DocumentQuizPage() {
                 {currentQuestion.options.map((option, idx) => {
                   const isSelected = userAnswers[currentQuestion.id] === option;
                   const isChecked = checkedQuestions[currentQuestion.id];
-                  const isCorrect = option.trim().toLowerCase() === currentQuestion.correctAnswer.trim().toLowerCase();
+                  const targetCorrect = currentQuestion.correctAnswer || currentQuestion.correct_answer || "";
+                  const isCorrect = option.trim().toLowerCase() === targetCorrect.trim().toLowerCase();
 
                   let stateStyles = "border-border bg-card hover:bg-muted/40 hover:border-primary/40";
                   if (isChecked) {
@@ -351,13 +352,13 @@ export default function DocumentQuizPage() {
                   <div
                     className={cn(
                       "p-3.5 sm:p-4 rounded-xl border mt-3 text-xs leading-relaxed space-y-1.5 animate-in fade-in-50 break-words",
-                      userAnswers[currentQuestion.id]?.trim().toLowerCase() === currentQuestion.correctAnswer.trim().toLowerCase()
+                      userAnswers[currentQuestion.id]?.trim().toLowerCase() === (currentQuestion.correct_answer || currentQuestion.correctAnswer || "").trim().toLowerCase()
                         ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-950 dark:text-emerald-200"
                         : "bg-amber-500/10 border-amber-500/30 text-amber-950 dark:text-amber-200"
                     )}
                   >
                     <div className="flex items-center gap-1.5 font-bold text-xs sm:text-sm">
-                      {userAnswers[currentQuestion.id]?.trim().toLowerCase() === currentQuestion.correctAnswer.trim().toLowerCase() ? (
+                      {userAnswers[currentQuestion.id]?.trim().toLowerCase() === (currentQuestion.correct_answer || currentQuestion.correctAnswer || "").trim().toLowerCase() ? (
                         <>
                           <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
                           <span>Correct Answer!</span>
@@ -437,7 +438,7 @@ export default function DocumentQuizPage() {
               const isCurrent = idx === currentQuestionIndex;
               const isAnswered = !!userAnswers[q.id];
               const isChecked = checkedQuestions[q.id];
-              const isCorrect = userAnswers[q.id]?.trim().toLowerCase() === q.correctAnswer.trim().toLowerCase();
+              const isCorrect = userAnswers[q.id]?.trim().toLowerCase() === (q.correct_answer || q.correctAnswer || "").trim().toLowerCase();
 
               let badgeStyle = "bg-muted text-muted-foreground border-border";
               if (isChecked) {
@@ -480,7 +481,7 @@ export default function DocumentQuizPage() {
                   {quizAttemptResult.percentage}% Score
                 </h2>
                 <p className="text-xs sm:text-sm text-muted-foreground">
-                  {quizAttemptResult.score} of {quizAttemptResult.totalQuestions} correct in {formatTime(quizAttemptResult.timeSpentSeconds)}.
+                  {quizAttemptResult.score} of {quizAttemptResult.totalQuestions} correct in {formatTime(quizAttemptResult.timeSpentSeconds || 0)}.
                 </p>
               </div>
 

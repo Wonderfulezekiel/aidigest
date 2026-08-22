@@ -14,10 +14,12 @@ import {
   Settings,
   Plus,
   Bot,
+  LogOut,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
 import { AILogo } from "@/components/ui/AILogo";
+import { useMockData } from "@/context/MockDataContext";
 
 interface AppSidebarProps {
   className?: string;
@@ -26,6 +28,7 @@ interface AppSidebarProps {
 
 export function AppSidebar({ className, onNavigate }: AppSidebarProps) {
   const pathname = usePathname();
+  const { logout } = useMockData();
 
   const navigation = [
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -63,7 +66,7 @@ export function AppSidebar({ className, onNavigate }: AppSidebarProps) {
       </div>
 
       {/* Navigation List */}
-      <nav className="flex-1 space-y-1 px-3 py-2">
+      <nav className="flex-1 space-y-1 px-3 py-2 overflow-y-auto">
         {navigation.map((item) => {
           const isActive = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href));
           const Icon = item.icon;
@@ -86,13 +89,23 @@ export function AppSidebar({ className, onNavigate }: AppSidebarProps) {
         })}
       </nav>
 
-      {/* Clean Footer Info */}
-      <div className="p-4 border-t border-border/80 text-xs text-muted-foreground flex items-center gap-2.5">
-        <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-        <span className="font-medium text-foreground flex items-center gap-1.5">
-          <Bot className="h-3.5 w-3.5 text-primary" />
-          Assistant Online
-        </span>
+      {/* Clean Footer Info & Logout */}
+      <div className="p-4 border-t border-border/80 space-y-3">
+        <div className="flex items-center justify-between text-xs text-muted-foreground">
+          <span className="font-medium text-foreground flex items-center gap-1.5">
+            <Bot className="h-3.5 w-3.5 text-primary" />
+            Assistant Active
+          </span>
+          <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+        </div>
+
+        <button
+          onClick={logout}
+          className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium text-destructive hover:bg-destructive/10 transition-colors"
+        >
+          <LogOut className="h-3.5 w-3.5" />
+          <span>Sign Out</span>
+        </button>
       </div>
     </aside>
   );

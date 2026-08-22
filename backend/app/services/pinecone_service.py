@@ -24,7 +24,10 @@ class PineconeService:
         for vec in vectors:
             self._local_vector_store[vec["id"]] = vec
 
-    async def query_similar_chunks(self, query_vector: List[float], document_id: str, top_k: int = 3) -> List[Dict[str, Any]]:
+    async def query_similar_chunks(self, query_vector: List[float], document_id: str, top_k: int = 6) -> List[Dict[str, Any]]:
+        """
+        Retrieves top_k most semantically relevant chunks for a document.
+        """
         if settings.PINECONE_API_KEY and not settings.PINECONE_API_KEY.startswith("pcsk_fake"):
             try:
                 from pinecone import Pinecone
@@ -44,7 +47,8 @@ class PineconeService:
                         "page_number": match.get("metadata", {}).get("page_number", 1),
                         "chunk_text": match.get("metadata", {}).get("chunk_text", ""),
                     })
-                return results
+                if results:
+                    return results
             except Exception as e:
                 print(f"[PineconeService] Query error: {e}")
 
@@ -63,5 +67,23 @@ class PineconeService:
 
         matched.sort(key=lambda x: x["score"], reverse=True)
         return matched[:top_k]
+
+    async def delete_document_vectors(self, document_id: str):
+        """
+        Deletes all vector embeddings associated with a document.
+        """
+        if settings.PINECONE_API_KEY and not settings.PINECONE_API_KEY.startswith("pcsk_fake"):
+            try:
+                from pinecone import Pinecone
+                pc = Pinecone(api_key=settings.PINECONE_API_KEY)
+                index = pc.Index(self.index_name)
+                index.delete(filter={"document_id": document_id})
+            except Exception as e:
+                print(f"[PineconeService] Delete vector notice: {e}")
+
+        # Clean local store
+        keys_to_del = [k for k, v in self._local_vector_store.items() if v.get("metadata", {}).get("document_id") == document_id]
+        for k in keys_to_del:
+            self._local_vector_store.pop(k, None)
 
 pinecone_service = PineconeService()

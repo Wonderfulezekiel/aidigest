@@ -188,7 +188,7 @@ export default function DocumentFlashcardsPage() {
     );
   }
 
-  const categories = Array.from(new Set(deck.cards.map((c) => c.category)));
+  const categories = Array.from(new Set(deck.cards.map((c) => c.category || "General")));
   const masteredCount = masteredIds.size;
   const progressPercent = Math.round((masteredCount / deck.cards.length) * 100);
 

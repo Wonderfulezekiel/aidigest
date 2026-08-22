@@ -7,18 +7,18 @@ def clean_text(text: str) -> str:
     if not text:
         return ""
     text = text.replace("\x00", "").replace("\u0000", "")
-    # Remove binary noise and unprintable control characters
     text = re.sub(r'[\x00-\x08\x0b\x0c\x0e-\x1f\x7f-\x9f]', '', text)
     return text.strip()
 
-def extract_with_pypdf(file_bytes: bytes, max_chunk_words: int = 250, max_total_chunks: int = 300) -> Dict[str, Any]:
-    """Uses pure-python pypdf to decompress and extract human-readable page text."""
+def extract_with_pypdf(file_bytes: bytes, chunk_words: int = 220, overlap_words: int = 40, max_total_chunks: int = 300) -> Dict[str, Any]:
+    """Uses pure-python pypdf to decompress and extract page text with overlapping semantic windows."""
     import pypdf
     reader = pypdf.PdfReader(io.BytesIO(file_bytes))
     page_count = len(reader.pages)
     chunks: List[Dict[str, Any]] = []
     full_text_list: List[str] = []
     chunk_index = 0
+    step = max(chunk_words - overlap_words, 50)
 
     for page_num in range(page_count):
         if chunk_index >= max_total_chunks:
@@ -33,12 +33,12 @@ def extract_with_pypdf(file_bytes: bytes, max_chunk_words: int = 250, max_total_
             full_text_list.append(f"--- Page {page_num + 1} ---\n{text}")
             words = text.split()
 
-            for i in range(0, len(words), max_chunk_words):
+            for i in range(0, len(words), step):
                 if chunk_index >= max_total_chunks:
                     break
-                chunk_words = words[i : i + max_chunk_words]
-                chunk_str = clean_text(" ".join(chunk_words))
-                if len(chunk_str) < 5:
+                chunk_words_slice = words[i : i + chunk_words]
+                chunk_str = clean_text(" ".join(chunk_words_slice))
+                if len(chunk_str) < 15:
                     continue
 
                 chunks.append({
@@ -63,14 +63,13 @@ def extract_with_pypdf(file_bytes: bytes, max_chunk_words: int = 250, max_total_
 
 class PDFService:
     @staticmethod
-    def extract_text_and_chunks(file_bytes: bytes, max_chunk_words: int = 250, max_total_chunks: int = 300) -> Dict[str, Any]:
+    def extract_text_and_chunks(file_bytes: bytes, chunk_words: int = 220, overlap_words: int = 40, max_total_chunks: int = 300) -> Dict[str, Any]:
         """
-        Robustly extracts academic text from PDF bytes using pypdf, fitz, or regex.
-        Guaranteed to return valid page_count, full_text, and chunks array even for large or complex PDFs.
+        Extracts academic text from PDF bytes using overlapping semantic chunks for superior RAG context coverage.
         """
-        # 1. Try pypdf (Pure Python, Decompresses FlateDecode streams reliably)
+        # 1. Try pypdf
         try:
-            res = extract_with_pypdf(file_bytes, max_chunk_words, max_total_chunks)
+            res = extract_with_pypdf(file_bytes, chunk_words, overlap_words, max_total_chunks)
             if res["chunks"] and len(res["full_text"]) > 10:
                 return res
         except Exception as e:
@@ -84,6 +83,7 @@ class PDFService:
             chunks: List[Dict[str, Any]] = []
             full_text_list: List[str] = []
             chunk_index = 0
+            step = max(chunk_words - overlap_words, 50)
 
             for page_num in range(page_count):
                 if chunk_index >= max_total_chunks:
@@ -95,11 +95,11 @@ class PDFService:
                         continue
                     full_text_list.append(text)
                     words = text.split()
-                    for i in range(0, len(words), max_chunk_words):
+                    for i in range(0, len(words), step):
                         if chunk_index >= max_total_chunks:
                             break
-                        chunk_words = words[i : i + max_chunk_words]
-                        chunk_str = clean_text(" ".join(chunk_words))
+                        chunk_words_slice = words[i : i + chunk_words]
+                        chunk_str = clean_text(" ".join(chunk_words_slice))
                         if chunk_str:
                             chunks.append({
                                 "chunk_index": chunk_index,
@@ -120,7 +120,7 @@ class PDFService:
         except Exception as e:
             print(f"[PDFService] fitz extraction notice: {e}")
 
-        # 3. Fallback text extractor for non-standard / corrupted PDFs
+        # 3. Fallback text extractor
         try:
             text_content = clean_text(file_bytes.decode("utf-8", errors="ignore"))
             words = [w for w in text_content.split() if len(w) > 1 and not w.startswith("obj") and not w.startswith("stream")]

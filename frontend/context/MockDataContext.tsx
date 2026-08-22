@@ -10,30 +10,30 @@ export interface DocumentItem {
   fileSize: number;
   pageCount: number;
   uploadDate: string;
-  status: "processing" | "ready" | "failed";
+  status: "ready" | "processing" | "error";
   chunkCount: number;
   vectorCount: number;
 }
 
 export interface SummaryItem {
-  id: string;
+  id?: string;
   documentId: string;
   shortSummary: string;
   detailedSummary: string;
   keyTopics: string[];
-  importantConcepts: { term: string; explanation: string }[];
-  definitions: { term: string; definition: string }[];
+  importantConcepts: Array<{ term: string; explanation: string }>;
+  definitions: Array<{ term: string; definition: string }>;
   mainIdeas: string[];
   conclusion: string;
 }
 
-export interface ChatMessage {
+export interface MessageItem {
   id: string;
   conversationId: string;
   role: "user" | "assistant";
   message: string;
-  createdAt: string;
-  citations?: { page: number; snippet: string }[];
+  createdAt?: string;
+  citations?: Array<{ page: number; snippet: string }>;
 }
 
 export interface ConversationItem {
@@ -42,76 +42,81 @@ export interface ConversationItem {
   documentTitle: string;
   title: string;
   createdAt: string;
-  messages: ChatMessage[];
+  messages: MessageItem[];
 }
 
 export interface QuizQuestion {
   id: string;
-  quizId?: string;
-  questionIndex?: number;
   question: string;
   options: string[];
-  correctAnswer: string;
+  correct_answer: string;
+  correctAnswer?: string;
   explanation: string;
-  topic: string;
-  pageCitation: number;
+  topic?: string;
+  page_citation?: number;
+  pageCitation?: number;
 }
 
 export interface QuizItem {
   id: string;
   documentId: string;
-  documentTitle: string;
+  documentTitle?: string;
   title: string;
-  description: string;
-  questionCount: number;
+  description?: string;
   questions: QuizQuestion[];
+  questionCount: number;
+  createdAt?: string;
 }
 
-export interface QuestionResult {
-  questionId: string;
+export interface QuizQuestionResult {
+  questionId?: string;
   question: string;
-  chosenAnswer: string;
-  correctAnswer: string;
-  isCorrect: boolean;
+  selected_option?: string;
+  chosenAnswer?: string;
+  correct_option?: string;
+  correctAnswer?: string;
+  is_correct?: boolean;
+  isCorrect?: boolean;
   explanation: string;
-  topic: string;
-  pageCitation: number;
+  topic?: string;
+  page_citation?: number;
+  pageCitation?: number;
 }
 
 export interface QuizAttempt {
   id: string;
   quizId: string;
-  quizTitle: string;
+  quizTitle?: string;
   documentId: string;
-  documentTitle: string;
+  documentTitle?: string;
   score: number;
   totalQuestions: number;
   percentage: number;
   grade: string;
   feedback: string;
-  timeSpentSeconds: number;
-  questionResults?: QuestionResult[];
-  createdAt?: string;
+  timeSpentSeconds?: number;
+  questionResults?: QuizQuestionResult[];
+  createdAt: string;
 }
 
 export interface Flashcard {
   id: string;
   setId?: string;
-  cardIndex?: number;
   front: string;
   back: string;
-  category: string;
-  difficulty: "Easy" | "Medium" | "Hard";
-  pageCitation: number;
+  category?: string;
+  difficulty?: "Easy" | "Medium" | "Hard";
+  pageCitation?: number;
 }
 
 export interface FlashcardSet {
   id: string;
   documentId: string;
-  documentTitle: string;
+  documentTitle?: string;
   title: string;
   cardCount: number;
   cards: Flashcard[];
+  createdAt?: string;
 }
 
 export interface UserProfile {
@@ -130,23 +135,33 @@ interface MockDataContextType {
   quizAttempts: QuizAttempt[];
   userProfile: UserProfile;
   uploadDocument: (file: File) => Promise<string>;
-  deleteDocument: (id: string) => void;
+  deleteDocument: (id: string) => Promise<void>;
   getSummary: (documentId: string) => SummaryItem | undefined;
   getConversationByDocId: (documentId: string) => ConversationItem | undefined;
-  getConversationById: (conversationId: string) => ConversationItem | undefined;
-  sendMessage: (conversationId: string, messageText: string) => Promise<void>;
-  deleteConversation: (conversationId: string) => void;
-  clearAllConversations: () => void;
-  // Quiz Actions
-  getQuizzesForDocument: (documentId: string) => Promise<QuizItem[]>;
+  sendMessage: (conversationId: string, message: string) => Promise<MessageItem>;
+  deleteConversation: (convId: string) => Promise<void>;
+  clearAllConversations: () => Promise<void>;
+  generateQuizForDoc: (documentId: string) => Promise<QuizItem>;
   generateNewQuiz: (documentId: string) => Promise<QuizItem>;
-  submitQuizAttempt: (quizId: string, answers: Record<string, string>, timeSpentSeconds?: number) => Promise<QuizAttempt>;
-  // Flashcard Actions
-  getFlashcardsForDocument: (documentId: string) => Promise<FlashcardSet>;
+  getQuizzesForDoc: (documentId: string) => Promise<QuizItem[]>;
+  getQuizzesForDocument: (documentId: string) => Promise<QuizItem[]>;
+  submitQuizAnswers: (
+    quizId: string,
+    answers: Record<string, string>,
+    timeSpentSeconds?: number
+  ) => Promise<QuizAttempt>;
+  submitQuizAttempt: (
+    quizId: string,
+    answers: Record<string, string>,
+    timeSpentSeconds?: number
+  ) => Promise<QuizAttempt>;
+  generateFlashcardsForDoc: (documentId: string) => Promise<FlashcardSet>;
   generateNewFlashcards: (documentId: string) => Promise<FlashcardSet>;
-  fetchAllFlashcardSets: () => Promise<FlashcardSet[]>;
-  // Profile Actions
-  updateUserProfile: (fullName: string) => void;
+  getFlashcardsForDoc: (documentId: string) => Promise<FlashcardSet | undefined>;
+  getFlashcardsForDocument: (documentId: string) => Promise<FlashcardSet | undefined>;
+  updateUserProfile: (fullName: string, email?: string) => void;
+  refreshData: () => Promise<void>;
+  logout: () => void;
   isLoading: boolean;
 }
 
@@ -224,6 +239,20 @@ export function MockDataProvider({ children }: { children: React.ReactNode }) {
             grade: a.grade,
             feedback: a.feedback,
             timeSpentSeconds: a.time_spent_seconds || 0,
+            questionResults: (a.question_results || []).map((q: any) => ({
+              questionId: q.question_id || q.questionId,
+              question: q.question,
+              selected_option: q.selected_option || q.chosenAnswer,
+              chosenAnswer: q.chosenAnswer || q.selected_option,
+              correct_option: q.correct_option || q.correctAnswer,
+              correctAnswer: q.correctAnswer || q.correct_option,
+              is_correct: q.is_correct ?? q.isCorrect ?? false,
+              isCorrect: q.isCorrect ?? q.is_correct ?? false,
+              explanation: q.explanation || "Review document context.",
+              topic: q.topic || "General",
+              page_citation: q.page_citation || q.pageCitation || 1,
+              pageCitation: q.pageCitation || q.page_citation || 1,
+            })),
             createdAt: a.created_at,
           })));
         }
@@ -306,8 +335,56 @@ export function MockDataProvider({ children }: { children: React.ReactNode }) {
       await api.deleteDocument(id);
       setDocuments((prev) => prev.filter((d) => d.id !== id));
       setConversations((prev) => prev.filter((c) => c.documentId !== id));
+      setAllFlashcardSets((prev) => prev.filter((s) => s.documentId !== id));
+      setQuizAttempts((prev) => prev.filter((a) => a.documentId !== id));
+      setSummaries((prev) => {
+        const next = { ...prev };
+        delete next[id];
+        return next;
+      });
+      setQuizzes((prev) => {
+        const next = { ...prev };
+        delete next[id];
+        return next;
+      });
+      setFlashcardSets((prev) => {
+        const next = { ...prev };
+        delete next[id];
+        return next;
+      });
     } catch (e) {
       console.error("Delete error:", e);
+      throw e;
+    }
+  };
+
+  const deleteConversation = async (convId: string) => {
+    try {
+      await api.deleteConversation(convId);
+      setConversations((prev) => prev.filter((c) => c.id !== convId));
+    } catch (e) {
+      console.error("Delete conversation error:", e);
+    }
+  };
+
+  const clearAllConversations = async () => {
+    try {
+      await api.clearAllConversations();
+      setConversations([]);
+    } catch (e) {
+      console.error("Clear conversations error:", e);
+    }
+  };
+
+  const logout = () => {
+    setUserProfile(defaultProfile);
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.removeItem("auth_token");
+        localStorage.removeItem("user_email");
+        sessionStorage.clear();
+      } catch (e) {}
+      window.location.href = "/login";
     }
   };
 
@@ -354,210 +431,231 @@ export function MockDataProvider({ children }: { children: React.ReactNode }) {
               citations: m.citations || [],
             })),
           };
-          setConversations((prev) => [newConv, ...prev.filter((item) => item.id !== newConv.id)]);
+          setConversations((prev) => [newConv, ...prev.filter((c) => c.id !== newConv.id)]);
         }
-      }).catch((e) => console.error(e));
+      }).catch((err) => console.error(err));
     }
     return conv;
   };
 
-  const getConversationById = (conversationId: string): ConversationItem | undefined => {
-    return conversations.find((c) => c.id === conversationId);
-  };
-
-  const sendMessage = async (conversationId: string, messageText: string) => {
+  const sendMessage = async (conversationId: string, message: string): Promise<MessageItem> => {
     try {
-      const aiMsg = await api.sendMessage(conversationId, messageText);
-      const newMsg: ChatMessage = {
-        id: aiMsg.id,
-        conversationId: aiMsg.conversation_id,
-        role: aiMsg.role,
-        message: aiMsg.message,
-        createdAt: aiMsg.created_at,
-        citations: aiMsg.citations || [],
+      const res = await api.sendMessage(conversationId, message);
+      const userMsg: MessageItem = {
+        id: "usr-" + Date.now(),
+        conversationId,
+        role: "user",
+        message,
+        createdAt: new Date().toISOString(),
+      };
+      const aiMsg: MessageItem = {
+        id: res.id || "ai-" + Date.now(),
+        conversationId,
+        role: "assistant",
+        message: res.message,
+        createdAt: res.created_at || new Date().toISOString(),
+        citations: res.citations || [],
       };
 
       setConversations((prev) =>
-        prev.map((c) => {
-          if (c.id === conversationId) {
-            const hasUserMsg = c.messages.some((m) => m.message === messageText && m.role === "user");
-            const userMsgObj: ChatMessage = {
-              id: `user-${Date.now()}`,
-              conversationId,
-              role: "user",
-              message: messageText,
-              createdAt: new Date().toISOString(),
-            };
-            const updatedMsgs = hasUserMsg ? [...c.messages, newMsg] : [...c.messages, userMsgObj, newMsg];
-            return { ...c, messages: updatedMsgs };
-          }
-          return c;
-        })
+        prev.map((c) =>
+          c.id === conversationId
+            ? { ...c, messages: [...c.messages, userMsg, aiMsg] }
+            : c
+        )
       );
+
+      return aiMsg;
     } catch (e) {
-      console.error("Send message error:", e);
+      console.error("Chat send error:", e);
+      throw e;
     }
   };
 
-  const deleteConversation = async (conversationId: string) => {
+  const generateQuizForDoc = async (documentId: string): Promise<QuizItem> => {
     try {
-      await api.deleteConversation(conversationId);
-      setConversations((prev) => prev.filter((c) => c.id !== conversationId));
+      const res = await api.generateQuiz(documentId);
+      const newQuiz: QuizItem = {
+        id: res.id || "quiz-" + Date.now(),
+        documentId,
+        documentTitle: res.document_title || "Academic Document",
+        title: res.title || "Mastery Quiz",
+        description: res.description,
+        questionCount: res.question_count || (res.questions ? res.questions.length : 5),
+        questions: (res.questions || []).map((q: any, idx: number) => ({
+          id: q.id || `q${idx + 1}`,
+          question: q.question,
+          options: q.options || [],
+          correct_answer: q.correct_answer || q.correctAnswer || "",
+          correctAnswer: q.correctAnswer || q.correct_answer || "",
+          explanation: q.explanation || "Review relevant document sections.",
+          topic: q.topic || "Core Concept",
+          page_citation: q.page_citation || q.pageCitation || 1,
+          pageCitation: q.pageCitation || q.page_citation || 1,
+        })),
+        createdAt: res.created_at || new Date().toISOString(),
+      };
+
+      setQuizzes((prev) => ({
+        ...prev,
+        [documentId]: [newQuiz, ...(prev[documentId] || [])],
+      }));
+
+      return newQuiz;
     } catch (e) {
-      console.error("Delete conversation error:", e);
+      console.error("Quiz generate error:", e);
+      throw e;
     }
   };
 
-  const clearAllConversations = async () => {
-    try {
-      await api.clearAllConversations();
-      setConversations([]);
-    } catch (e) {
-      console.error("Clear all conversations error:", e);
-    }
-  };
-
-  // --- Quiz Context Methods ---
-  const mapQuiz = (q: any): QuizItem => ({
-    id: q.id,
-    documentId: q.document_id,
-    documentTitle: q.document_title || "Academic Document",
-    title: q.title || "Mastery Quiz",
-    description: q.description || "Interactive learning quiz.",
-    questionCount: q.question_count || (q.questions ? q.questions.length : 0),
-    questions: (q.questions || []).map((item: any) => ({
-      id: item.id,
-      quizId: item.quiz_id,
-      questionIndex: item.question_index,
-      question: item.question,
-      options: item.options || [],
-      correctAnswer: item.correct_answer,
-      explanation: item.explanation,
-      topic: item.topic || "General",
-      pageCitation: item.page_citation || 1,
-    })),
-  });
-
-  const getQuizzesForDocument = async (documentId: string): Promise<QuizItem[]> => {
+  const getQuizzesForDoc = async (documentId: string): Promise<QuizItem[]> => {
     if (quizzes[documentId] && quizzes[documentId].length > 0) {
       return quizzes[documentId];
     }
     try {
       const res = await api.getQuizzesByDoc(documentId);
-      const list = Array.isArray(res) ? res.map(mapQuiz) : [mapQuiz(res)];
-      setQuizzes((prev) => ({ ...prev, [documentId]: list }));
-      return list;
-    } catch (e) {
-      console.error("Fetch quizzes error:", e);
-      return [];
+      if (Array.isArray(res)) {
+        const mapped: QuizItem[] = res.map((r: any) => ({
+          id: r.id,
+          documentId,
+          documentTitle: r.document_title,
+          title: r.title,
+          description: r.description,
+          questionCount: r.question_count,
+          questions: (r.questions || []).map((q: any) => ({
+            id: q.id,
+            question: q.question,
+            options: q.options || [],
+            correct_answer: q.correct_answer || q.correctAnswer || "",
+            correctAnswer: q.correctAnswer || q.correct_answer || "",
+            explanation: q.explanation,
+            topic: q.topic,
+            page_citation: q.page_citation || q.pageCitation || 1,
+            pageCitation: q.pageCitation || q.page_citation || 1,
+          })),
+          createdAt: r.created_at,
+        }));
+        setQuizzes((prev) => ({ ...prev, [documentId]: mapped }));
+        return mapped;
+      }
+    } catch (err) {
+      console.warn("Fetch quizzes warning:", err);
     }
+    return [];
   };
 
-  const generateNewQuiz = async (documentId: string): Promise<QuizItem> => {
-    const res = await api.generateQuiz(documentId);
-    const newQuiz = mapQuiz(res);
-    setQuizzes((prev) => ({
-      ...prev,
-      [documentId]: [newQuiz, ...(prev[documentId] || [])],
-    }));
-    return newQuiz;
-  };
-
-  const submitQuizAttempt = async (
+  const submitQuizAnswers = async (
     quizId: string,
     answers: Record<string, string>,
     timeSpentSeconds: number = 0
   ): Promise<QuizAttempt> => {
-    const res = await api.submitQuiz(quizId, answers, timeSpentSeconds);
-    const attempt: QuizAttempt = {
-      id: res.id,
-      quizId: res.quiz_id,
-      quizTitle: res.quiz_title,
-      documentId: res.document_id,
-      documentTitle: res.document_title,
-      score: res.score,
-      totalQuestions: res.total_questions,
-      percentage: res.percentage,
-      grade: res.grade,
-      feedback: res.feedback,
-      timeSpentSeconds: res.time_spent_seconds,
-      questionResults: (res.question_results || []).map((r: any) => ({
-        questionId: r.question_id,
-        question: r.question,
-        chosenAnswer: r.chosen_answer,
-        correctAnswer: r.correct_answer,
-        isCorrect: r.is_correct,
-        explanation: r.explanation,
-        topic: r.topic,
-        pageCitation: r.page_citation,
-      })),
-      createdAt: new Date().toISOString(),
-    };
-    setQuizAttempts((prev) => [attempt, ...prev]);
-    return attempt;
-  };
-
-  // --- Flashcard Context Methods ---
-  const mapFlashcardSet = (s: any): FlashcardSet => ({
-    id: s.id,
-    documentId: s.document_id,
-    documentTitle: s.document_title || "Academic Document",
-    title: s.title || "Study Deck",
-    cardCount: s.card_count || (s.cards ? s.cards.length : 0),
-    cards: (s.cards || []).map((c: any) => ({
-      id: c.id,
-      setId: c.set_id,
-      cardIndex: c.card_index,
-      front: c.front,
-      back: c.back,
-      category: c.category || "Concept",
-      difficulty: c.difficulty || "Medium",
-      pageCitation: c.page_citation || 1,
-    })),
-  });
-
-  const getFlashcardsForDocument = async (documentId: string): Promise<FlashcardSet> => {
-    if (flashcardSets[documentId]) {
-      return flashcardSets[documentId];
-    }
     try {
-      const res = await api.getFlashcardsByDoc(documentId);
-      const set = mapFlashcardSet(res);
-      setFlashcardSets((prev) => ({ ...prev, [documentId]: set }));
-      return set;
+      const res = await api.submitQuiz(quizId, answers, timeSpentSeconds);
+      const newAttempt: QuizAttempt = {
+        id: res.id || "att-" + Date.now(),
+        quizId,
+        quizTitle: res.quiz_title || "Mastery Quiz",
+        documentId: res.document_id,
+        documentTitle: res.document_title || "Document",
+        score: res.score,
+        totalQuestions: res.total_questions,
+        percentage: res.percentage,
+        grade: res.grade,
+        feedback: res.feedback,
+        timeSpentSeconds: res.time_spent_seconds || timeSpentSeconds,
+        questionResults: (res.question_results || []).map((q: any) => ({
+          questionId: q.question_id || q.questionId,
+          question: q.question,
+          selected_option: q.selected_option || q.chosenAnswer,
+          chosenAnswer: q.chosenAnswer || q.selected_option,
+          correct_option: q.correct_option || q.correctAnswer,
+          correctAnswer: q.correctAnswer || q.correct_option,
+          is_correct: q.is_correct ?? q.isCorrect ?? false,
+          isCorrect: q.isCorrect ?? q.is_correct ?? false,
+          explanation: q.explanation || "Review document context.",
+          topic: q.topic || "General",
+          page_citation: q.page_citation || q.pageCitation || 1,
+          pageCitation: q.pageCitation || q.page_citation || 1,
+        })),
+        createdAt: res.created_at || new Date().toISOString(),
+      };
+
+      setQuizAttempts((prev) => [newAttempt, ...prev]);
+      return newAttempt;
     } catch (e) {
-      console.error("Fetch flashcards error:", e);
+      console.error("Submit quiz error:", e);
       throw e;
     }
   };
 
-  const generateNewFlashcards = async (documentId: string): Promise<FlashcardSet> => {
-    const res = await api.generateFlashcards(documentId);
-    const newSet = mapFlashcardSet(res);
-    setFlashcardSets((prev) => ({ ...prev, [documentId]: newSet }));
-    setAllFlashcardSets((prev) => [newSet, ...prev.filter((item) => item.id !== newSet.id)]);
-    return newSet;
-  };
-
-  const fetchAllFlashcardSets = async (): Promise<FlashcardSet[]> => {
+  const generateFlashcardsForDoc = async (documentId: string): Promise<FlashcardSet> => {
     try {
-      const res = await api.getAllFlashcardSets();
-      const list = (res || []).map(mapFlashcardSet);
-      setAllFlashcardSets(list);
-      return list;
+      const res = await api.generateFlashcards(documentId);
+      const newSet: FlashcardSet = {
+        id: res.id || "fset-" + Date.now(),
+        documentId,
+        documentTitle: res.document_title || "Academic Document",
+        title: res.title || "Study Deck",
+        cardCount: res.card_count || (res.cards ? res.cards.length : 8),
+        cards: (res.cards || []).map((c: any, idx: number) => ({
+          id: c.id || `c${idx + 1}`,
+          setId: res.id,
+          front: c.front,
+          back: c.back,
+          category: c.category || "General",
+          difficulty: c.difficulty || "Medium",
+          pageCitation: c.page_citation || 1,
+        })),
+        createdAt: res.created_at || new Date().toISOString(),
+      };
+
+      setFlashcardSets((prev) => ({ ...prev, [documentId]: newSet }));
+      setAllFlashcardSets((prev) => [newSet, ...prev.filter((s) => s.id !== newSet.id)]);
+      return newSet;
     } catch (e) {
-      console.error("Fetch all flashcard sets error:", e);
-      return [];
+      console.error("Flashcards generate error:", e);
+      throw e;
     }
   };
 
-  const updateUserProfile = async (fullName: string) => {
+  const getFlashcardsForDoc = async (documentId: string): Promise<FlashcardSet | undefined> => {
+    if (flashcardSets[documentId]) return flashcardSets[documentId];
+
     try {
-      const updated = await api.updateProfile(fullName);
-      setUserProfile((prev) => ({ ...prev, fullName: updated.full_name }));
-    } catch (e) {
-      setUserProfile((prev) => ({ ...prev, fullName }));
+      const res = await api.getFlashcardsByDoc(documentId);
+      if (res && res.id) {
+        const item: FlashcardSet = {
+          id: res.id,
+          documentId,
+          documentTitle: res.document_title || "Academic Document",
+          title: res.title,
+          cardCount: res.card_count || (res.cards ? res.cards.length : 0),
+          cards: (res.cards || []).map((c: any) => ({
+            id: c.id,
+            setId: res.id,
+            front: c.front,
+            back: c.back,
+            category: c.category || "General",
+            difficulty: c.difficulty || "Medium",
+            pageCitation: c.page_citation || 1,
+          })),
+          createdAt: res.created_at,
+        };
+        setFlashcardSets((prev) => ({ ...prev, [documentId]: item }));
+        return item;
+      }
+    } catch (err) {
+      console.warn("Get flashcards warning:", err);
     }
+    return undefined;
+  };
+
+  const updateUserProfile = (fullName: string, email?: string) => {
+    setUserProfile((prev) => ({
+      ...prev,
+      fullName,
+      email: email || prev.email,
+    }));
   };
 
   return (
@@ -575,17 +673,22 @@ export function MockDataProvider({ children }: { children: React.ReactNode }) {
         deleteDocument,
         getSummary,
         getConversationByDocId,
-        getConversationById,
         sendMessage,
         deleteConversation,
         clearAllConversations,
-        getQuizzesForDocument,
-        generateNewQuiz,
-        submitQuizAttempt,
-        getFlashcardsForDocument,
-        generateNewFlashcards,
-        fetchAllFlashcardSets,
+        generateQuizForDoc,
+        generateNewQuiz: generateQuizForDoc,
+        getQuizzesForDoc,
+        getQuizzesForDocument: getQuizzesForDoc,
+        submitQuizAnswers,
+        submitQuizAttempt: submitQuizAnswers,
+        generateFlashcardsForDoc,
+        generateNewFlashcards: generateFlashcardsForDoc,
+        getFlashcardsForDoc,
+        getFlashcardsForDocument: getFlashcardsForDoc,
         updateUserProfile,
+        refreshData,
+        logout,
         isLoading,
       }}
     >

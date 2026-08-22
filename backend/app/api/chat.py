@@ -100,28 +100,38 @@ async def send_message(req: SendMessageRequest):
     }
     safe_execute(supabase.table("messages").insert(user_msg_record))
 
-    # 2. RAG Flow: Vectorize Question & Query Pinecone
+    # 2. Deep Context Retrieval: Vectorize Question & Query Pinecone (top 6 chunks)
     retrieved_chunks = []
     try:
         query_vector = await embedding_service.generate_embedding(req.message)
-        retrieved_chunks = await pinecone_service.query_similar_chunks(query_vector, doc_id, top_k=3)
+        retrieved_chunks = await pinecone_service.query_similar_chunks(query_vector, doc_id, top_k=6)
     except Exception as e:
         print(f"[Chat] RAG vector query notice: {e}")
 
-    # Fallback context from document chunks if vector search returned empty
-    if not retrieved_chunks:
-        chunk_db_res = safe_execute(supabase.table("document_chunks").select("*").eq("document_id", doc_id).limit(3), fallback=[])
+    # Fallback or Augment with direct document chunks from database
+    if len(retrieved_chunks) < 3:
+        chunk_db_res = safe_execute(supabase.table("document_chunks").select("*").eq("document_id", doc_id).limit(6), fallback=[])
         if chunk_db_res:
-            retrieved_chunks = [
+            db_chunks = [
                 {
-                    "page_number": c.get("chunk_index", 0) + 1,
+                    "page_number": c.get("page_number", c.get("chunk_index", 0) + 1),
                     "chunk_text": c.get("chunk_text", ""),
                 }
                 for c in chunk_db_res
             ]
+            retrieved_chunks.extend(db_chunks)
 
-    # 3. Generate AI Answer using OpenRouter LLM Model
-    rag_output = await ai_service.generate_rag_answer(req.message, doc_title, retrieved_chunks)
+    # Deduplicate retrieved chunks
+    seen_texts = set()
+    unique_chunks = []
+    for c in retrieved_chunks:
+        t = c.get("chunk_text", "").strip()
+        if t and t not in seen_texts:
+            seen_texts.add(t)
+            unique_chunks.append(c)
+
+    # 3. Generate High-Insight AI Answer
+    rag_output = await ai_service.generate_rag_answer(req.message, doc_title, unique_chunks[:6])
 
     # 4. Save AI Response to Supabase
     ai_msg_record = {
