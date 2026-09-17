@@ -33,10 +33,14 @@ export function AppHeader() {
     if (pathname === "/upload") return "Upload PDF";
     if (pathname === "/documents") return "My Documents";
     if (pathname === "/chat/history") return "Chat History";
+    if (pathname === "/quiz") return "Interactive Quizzes";
+    if (pathname === "/flashcards") return "Study Flashcards";
     if (pathname === "/profile") return "User Profile";
     if (pathname === "/settings") return "Settings";
     if (pathname.includes("/summary")) return "AI Document Summary";
     if (pathname.includes("/chat")) return "Conversational AI Chat";
+    if (pathname.includes("/quiz")) return "Document Quiz";
+    if (pathname.includes("/flashcards")) return "Document Flashcards";
     if (pathname.startsWith("/documents/")) return "Document Details";
     return "PDF AIDigest";
   };
