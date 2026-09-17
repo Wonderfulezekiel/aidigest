@@ -28,8 +28,14 @@ export default function LoginPage() {
 
     try {
       const res = await api.login(email, password);
-      if (res.user && res.user.full_name) {
-        updateUserProfile(res.user.full_name);
+      if (typeof window !== "undefined") {
+        if (res.token) localStorage.setItem("auth_token", res.token);
+        if (res.user?.id) localStorage.setItem("auth_user_id", res.user.id);
+        if (res.user?.email) localStorage.setItem("user_email", res.user.email);
+        if (res.user?.full_name) localStorage.setItem("user_name", res.user.full_name);
+      }
+      if (res.user) {
+        updateUserProfile(res.user.full_name, res.user.email);
       }
       router.push("/dashboard");
     } catch (err: any) {

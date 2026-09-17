@@ -184,8 +184,50 @@ export function MockDataProvider({ children }: { children: React.ReactNode }) {
   const [userProfile, setUserProfile] = useState<UserProfile>(defaultProfile);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
+  // Initialize profile from localStorage immediately to avoid UI flickering
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const storedName = localStorage.getItem("user_name");
+      const storedEmail = localStorage.getItem("user_email");
+      if (storedName || storedEmail) {
+        setUserProfile({
+          fullName: storedName || "Academic Scholar",
+          email: storedEmail || "student@university.edu",
+          avatarUrl: "",
+        });
+      }
+    }
+  }, []);
+
   const refreshData = async () => {
     try {
+      // Check if user is logged in
+      const token = typeof window !== "undefined" ? localStorage.getItem("auth_token") : null;
+      if (!token) {
+        setDocuments([]);
+        setConversations([]);
+        setQuizAttempts([]);
+        setAllFlashcardSets([]);
+        setIsLoading(false);
+        return;
+      }
+
+      // 1. Fetch user profile from backend
+      api.getProfile().then((profileData) => {
+        if (profileData && profileData.email) {
+          setUserProfile({
+            fullName: profileData.full_name || "Academic Scholar",
+            email: profileData.email,
+            avatarUrl: profileData.avatar_url || "",
+          });
+          if (typeof window !== "undefined") {
+            if (profileData.full_name) localStorage.setItem("user_name", profileData.full_name);
+            if (profileData.email) localStorage.setItem("user_email", profileData.email);
+          }
+        }
+      }).catch(() => {});
+
+      // 2. Fetch documents belonging to current user
       const docsData = await api.getDocuments();
       if (Array.isArray(docsData)) {
         const mappedDocs: DocumentItem[] = docsData.map((d: any) => ({
@@ -200,9 +242,11 @@ export function MockDataProvider({ children }: { children: React.ReactNode }) {
           vectorCount: d.vector_count || 0,
         }));
         setDocuments(mappedDocs);
+      } else {
+        setDocuments([]);
       }
 
-      // Fetch conversations history
+      // 3. Fetch conversations history for current user
       api.getConversations().then((convsData) => {
         if (Array.isArray(convsData)) {
           const mappedConvs: ConversationItem[] = convsData.map((c: any) => ({
@@ -221,10 +265,12 @@ export function MockDataProvider({ children }: { children: React.ReactNode }) {
             })),
           }));
           setConversations(mappedConvs);
+        } else {
+          setConversations([]);
         }
       }).catch(() => {});
 
-      // Fetch quiz attempts history
+      // 4. Fetch quiz attempts history for current user
       api.getQuizAttempts().then((attemptsData) => {
         if (Array.isArray(attemptsData)) {
           setQuizAttempts(attemptsData.map((a: any) => ({
@@ -255,10 +301,12 @@ export function MockDataProvider({ children }: { children: React.ReactNode }) {
             })),
             createdAt: a.created_at,
           })));
+        } else {
+          setQuizAttempts([]);
         }
       }).catch(() => {});
 
-      // Fetch all flashcard sets
+      // 5. Fetch all flashcard sets
       api.getAllFlashcardSets().then((flashSets) => {
         if (Array.isArray(flashSets)) {
           const mappedSets: FlashcardSet[] = flashSets.map((s: any) => ({
@@ -278,17 +326,8 @@ export function MockDataProvider({ children }: { children: React.ReactNode }) {
             })),
           }));
           setAllFlashcardSets(mappedSets);
-        }
-      }).catch(() => {});
-
-      // Fetch User profile
-      api.getProfile().then((profileData) => {
-        if (profileData) {
-          setUserProfile({
-            fullName: profileData.full_name || "Academic Scholar",
-            email: profileData.email || "student@university.edu",
-            avatarUrl: profileData.avatar_url || "",
-          });
+        } else {
+          setAllFlashcardSets([]);
         }
       }).catch(() => {});
     } catch (err) {
@@ -378,10 +417,19 @@ export function MockDataProvider({ children }: { children: React.ReactNode }) {
 
   const logout = () => {
     setUserProfile(defaultProfile);
+    setDocuments([]);
+    setConversations([]);
+    setSummaries({});
+    setQuizzes({});
+    setFlashcardSets({});
+    setAllFlashcardSets([]);
+    setQuizAttempts([]);
     if (typeof window !== "undefined") {
       try {
         localStorage.removeItem("auth_token");
+        localStorage.removeItem("auth_user_id");
         localStorage.removeItem("user_email");
+        localStorage.removeItem("user_name");
         sessionStorage.clear();
       } catch (e) {}
       window.location.href = "/login";

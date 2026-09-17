@@ -25,12 +25,28 @@ export async function fetchApi(endpoint: string, options: RequestInit = {}) {
   const cleanEndpoint = endpoint.startsWith("/") ? endpoint : `/${endpoint}`;
   const url = `${baseUrl}${cleanEndpoint}`;
 
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    ...((options.headers as Record<string, string>) || {}),
+  };
+
+  // Automatically attach authentication headers if user is logged in
+  if (typeof window !== "undefined") {
+    try {
+      const token = localStorage.getItem("auth_token");
+      const userId = localStorage.getItem("auth_user_id");
+      if (token && !headers["Authorization"]) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+      if (userId && !headers["X-User-Id"]) {
+        headers["X-User-Id"] = userId;
+      }
+    } catch (e) {}
+  }
+
   const response = await fetch(url, {
     ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...options.headers,
-    },
+    headers,
   });
 
   if (!response.ok) {
@@ -72,9 +88,21 @@ export const api = {
     const baseUrl = getApiBaseUrl();
     const formData = new FormData();
     formData.append("file", file);
+
+    const headers: Record<string, string> = {};
+    if (typeof window !== "undefined") {
+      try {
+        const token = localStorage.getItem("auth_token");
+        const userId = localStorage.getItem("auth_user_id");
+        if (token) headers["Authorization"] = `Bearer ${token}`;
+        if (userId) headers["X-User-Id"] = userId;
+      } catch (e) {}
+    }
+
     const res = await fetch(`${baseUrl}/documents/upload`, {
       method: "POST",
       body: formData,
+      headers,
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));

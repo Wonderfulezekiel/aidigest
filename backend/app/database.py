@@ -10,10 +10,10 @@ def get_supabase_client() -> Client:
 
 supabase: Client = get_supabase_client()
 
-def safe_execute(query_builder, fallback=None, retries=2):
+def safe_execute(query_builder, fallback=None, retries=3):
     """
     Safely executes a Supabase PostgREST query builder with automatic retries
-    and network exception shielding (e.g. Errno 11001 getaddrinfo failed).
+    and network exception shielding (e.g. Errno 11001 getaddrinfo failed, SSL resets).
     """
     if fallback is None:
         fallback = []
@@ -27,6 +27,6 @@ def safe_execute(query_builder, fallback=None, retries=2):
         except Exception as e:
             print(f"[Supabase] Network query notice (Attempt {attempt+1}/{retries+1}): {e}")
             if attempt < retries:
-                time.sleep(0.5)
+                time.sleep(0.8 * (attempt + 1))
 
     return fallback

@@ -59,8 +59,10 @@ async def login(req: LoginRequest):
             detail="Incorrect password. Please verify and try again."
         )
 
-    # Sync cache
+    # Sync cache by email and user ID
     _users_db[email_clean] = profile
+    if profile.get("id"):
+        _users_db[profile["id"]] = profile
 
     return {
         "user": {
@@ -99,8 +101,9 @@ async def register(req: RegisterRequest):
 
     # Save to database
     safe_execute(supabase.table("profiles").insert(profile))
-    # Cache in memory
+    # Cache in memory by email and ID
     _users_db[email_clean] = profile
+    _users_db[user_id] = profile
 
     return {
         "user": {

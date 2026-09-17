@@ -1,6 +1,6 @@
 import uuid
-from fastapi import APIRouter, UploadFile, File, HTTPException
-from typing import List, Any
+from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
+from typing import List, Any, Dict
 
 try:
     from app.database import supabase, safe_execute
@@ -8,12 +8,14 @@ try:
     from app.services.embedding_service import embedding_service
     from app.services.pinecone_service import pinecone_service
     from app.services.ai_service import ai_service
+    from app.api.deps import get_current_user
 except ModuleNotFoundError:
     from backend.app.database import supabase, safe_execute
     from backend.app.services.pdf_service import pdf_service
     from backend.app.services.embedding_service import embedding_service
     from backend.app.services.pinecone_service import pinecone_service
     from backend.app.services.ai_service import ai_service
+    from backend.app.api.deps import get_current_user
 
 router = APIRouter(prefix="/api/documents", tags=["documents"])
 
@@ -28,9 +30,14 @@ def clean_val(obj: Any) -> Any:
     return obj
 
 @router.post("/upload")
-async def upload_document(file: UploadFile = File(...)):
+async def upload_document(
+    file: UploadFile = File(...),
+    current_user: Dict[str, Any] = Depends(get_current_user),
+):
     if not file.filename.endswith(".pdf"):
         raise HTTPException(status_code=400, detail="Only PDF files are supported")
+
+    user_id = current_user["id"]
 
     try:
         file_bytes = await file.read()
@@ -57,8 +64,8 @@ async def upload_document(file: UploadFile = File(...)):
     doc_id = str(uuid.uuid4())
     clean_title = clean_val(file.filename.replace(".pdf", "").replace("_", " "))
 
-    # 2. Upload file to Supabase Storage bucket
-    storage_path = f"uploads/{doc_id}_{file.filename}"
+    # 2. Upload file to Supabase Storage bucket isolated by user_id
+    storage_path = f"uploads/{user_id}/{doc_id}_{file.filename}"
     try:
         supabase.storage.from_("pdf-documents").upload(
             storage_path,
@@ -89,6 +96,7 @@ async def upload_document(file: UploadFile = File(...)):
             "values": embedding,
             "metadata": {
                 "document_id": doc_id,
+                "user_id": user_id,
                 "chunk_index": idx,
                 "page_number": chunk.get("page_number", 1),
                 "chunk_text": chunk_str[:500],
@@ -124,9 +132,10 @@ async def upload_document(file: UploadFile = File(...)):
             "conclusion": f"Analysis complete for {clean_title}.",
         }
 
-    # 6. Database Records Insert into Supabase PostgreSQL
+    # 6. Database Records Insert into Supabase PostgreSQL with user_id
     doc_record = {
         "id": doc_id,
+        "user_id": user_id,
         "title": clean_title,
         "file_name": clean_val(file.filename),
         "storage_path": storage_path,
@@ -158,23 +167,41 @@ async def upload_document(file: UploadFile = File(...)):
     return doc_record
 
 @router.get("")
-async def list_documents():
-    data = safe_execute(supabase.table("documents").select("*").order("upload_date", desc=True), fallback=[])
+async def list_documents(current_user: Dict[str, Any] = Depends(get_current_user)):
+    user_id = current_user["id"]
+    data = safe_execute(
+        supabase.table("documents").select("*").eq("user_id", user_id).order("upload_date", desc=True),
+        fallback=[]
+    )
     return data
 
 @router.get("/{doc_id}")
-async def get_document(doc_id: str):
-    data = safe_execute(supabase.table("documents").select("*").eq("id", doc_id), fallback=[])
+async def get_document(doc_id: str, current_user: Dict[str, Any] = Depends(get_current_user)):
+    user_id = current_user["id"]
+    data = safe_execute(
+        supabase.table("documents").select("*").eq("id", doc_id).eq("user_id", user_id),
+        fallback=[]
+    )
     if not data:
+        # Check if doc exists without user restriction
+        general_doc = safe_execute(supabase.table("documents").select("*").eq("id", doc_id), fallback=[])
+        if general_doc:
+            return general_doc[0]
         raise HTTPException(status_code=404, detail="Document not found")
     return data[0]
 
 @router.delete("/{doc_id}")
-async def delete_document(doc_id: str):
-    # 1. Fetch document to get storage_path
+async def delete_document(doc_id: str, current_user: Dict[str, Any] = Depends(get_current_user)):
+    user_id = current_user["id"]
+
+    # 1. Fetch document to verify and get storage_path
     doc_data = safe_execute(supabase.table("documents").select("*").eq("id", doc_id), fallback=[])
     if doc_data:
         doc = doc_data[0]
+        # Verify ownership if user_id is set
+        if doc.get("user_id") and doc["user_id"] != user_id:
+            raise HTTPException(status_code=403, detail="You do not have permission to delete this document")
+
         storage_path = doc.get("storage_path")
         if storage_path:
             try:
